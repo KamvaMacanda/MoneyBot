@@ -5,8 +5,8 @@
 
         public int Id { get; set; } 
 
-        public string UserID { get; set;  } = "";
-        public  string PlaidAccessToken {  get; set; } = "";
+        public string UserId { get; set;  } = "";
+        public  string PlaidAccessTokenEnc {  get; set; } = "";
 
         public string? Cursor { get; set;  } = "";
         public string BankName { get; set; } = "";

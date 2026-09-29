@@ -172,8 +172,25 @@ namespace MoneyBot.Services
         /// 
         private async Task <object > TopMerchantsAsync (string userId , DateOnly start , DateOnly end)
         {
+            return await _db.Transactions 
+                .Where(t => t.UserId == userId &&
+                t.Date >= start &&
+                t.Date <= end && 
+                t.Amount > 0)
 
+                .GroupBy(t => t.Merchant) 
+
+            .Select(g => new { Merchant = g.Key, 
+                Total = g.Sum(t => t.Amount) })
+
+            .OrderByDescending(x => x.Total)
+
+            .Take(10)
+
+            .ToListAsync();
         }
+
+    }
 
 
 

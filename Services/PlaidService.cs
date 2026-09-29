@@ -1,11 +1,16 @@
 ﻿using Going.Plaid;
 using Going.Plaid.Entity;
-using MoneyBot.Data;
+using Going.Plaid.Link;
+using Going.Plaid.Transactions;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.EntityFrameworkCore;
+using MoneyBot.Data;
 using System.Globalization;
 
 namespace MoneyBot.Services
 {
+
+
     public class PlaidService
     {
         /// <summary>
@@ -16,42 +21,41 @@ namespace MoneyBot.Services
 
         private readonly PlaidClient _plaid;
 
-        private readonly AppDBContext _db; 
+        private readonly AppDbContext _db;
 
-        public PlaidService (PlaidClient plaid , AppDBContext db)
+        private readonly IDataProtector _protector;
+        public PlaidService (PlaidClient plaid , AppDbContext db, IDataProtectionProvider dataProtection)
         {
         
             _db = db;
             _plaid = plaid;
-
+            _protector = dataProtection.CreateProtector("PlaidAccessToken");
         }
-      
 
 
-        public async Task <string> CreateLinkTokenAsync (int UserID)
+        public async Task<string> CreateLinkTokenAsync(string userId)
         {
             var response = await _plaid.LinkTokenCreateAsync(new LinkTokenCreateRequest
             {
-                User = new LinkTokenCreateRequestUser { ClientUserIdentity = UserID.ToString() },
+                User = new LinkTokenCreateRequestUser { ClientUserId = userId },
                 ClientName = "MoneyBot",
                 Products = new[] { Products.Transactions },
-                CountryCode = new[] { CountryCode.Us },
-                Language = "en",
-
+                CountryCodes = new[] { CountryCode.Us },
+                Language = Language.English,
             });
 
-            return response.LinkToken;   
-         }
+            return response.LinkToken;
+        }
 
 
 
         /// <summary>
         ///  Runs once, right after the user finishes the Plaid Link flow in the browser.
         /// Swaps the short-lived public token for a permanent access token, saves a new
-     
+
         /// </summary>
 
-        public async Task ExchangePublicTokenAsync (int UserID , string publicToken)
+        public async Task ExchangePublicTokenAsync(string userId, string publicToken)
         {
             var exchange = await _plaid.ItemPublicTokenExchangeAsync(
                 new Going.Plaid.Item.ItemPublicTokenExchangeRequest
@@ -59,18 +63,17 @@ namespace MoneyBot.Services
                     PublicToken = publicToken
                 });
 
-
             _db.Items.Add(new Item
             {
-                UserId = UserID,
-                PlaidAccessTokenEnc = Encrypt(exchange.AccessToken),
+                UserId = userId,
+                PlaidAccessTokenEnc = _protector.Protect(exchange.AccessToken),
                 Cursor = null,
                 BankName = "Unknown",
             });
 
             await _db.SaveChangesAsync();
 
-            await SyncTransactionsAsync(UserID);
+            await SyncTransactionsAsync(userId);
         }
 
         /// <summary>
@@ -81,32 +84,31 @@ namespace MoneyBot.Services
         /// and (ideally) from a Plaid webhook when new transactions land.
         /// </summary>
 
-        public async Task SyncTransactionAsync(int UserID)
+
+        public async Task SyncTransactionsAsync(string userId)
         {
-            var items = await _db.Items.Where(i => i.UserId == UserID).ToListAsync();
+            var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
 
             foreach (var item in items)
             {
-                var accessToken = Decrypt(item.PlaidAcessTokenEnc);
+                var accessToken = _protector.Unprotect(item.PlaidAccessTokenEnc);
                 bool hasMore = true;
                 string? cursor = item.Cursor;
-
 
                 while (hasMore)
                 {
                     var response = await _plaid.TransactionsSyncAsync(new TransactionsSyncRequest
                     {
-                        AcessToken = accessToken,
+                        AccessToken = accessToken,
                         Cursor = cursor,
                     });
 
                     foreach (var t in response.Added.Concat(response.Modified))
-                        UpsertTransaction(UserID, t);  
+                        await UpsertTransaction(userId, t);
 
                     foreach (var removed in response.Removed)
                     {
                         var existing = await _db.Transactions.FindAsync(removed.TransactionId);
-                       
                         if (existing != null)
                             _db.Transactions.Remove(existing);
                     }
@@ -117,6 +119,7 @@ namespace MoneyBot.Services
 
                 item.Cursor = cursor;
             }
+
             await _db.SaveChangesAsync();
         }
 
@@ -124,25 +127,20 @@ namespace MoneyBot.Services
 
         private void UpsertTransaction( int UserID , Going.Plaid.Entity.Transaction t)
         {
-            var existing = _db.Transactions.Find(t.TransactionId)
+            var existing = _db.Transactions.Find(t.TransactionId);
             var row = existing ?? new Models.Transaction { TransactionId = t.TransactionId };
 
             row.userID = UserID;
-            row.Date = DateOnly.FromDateTime(t.Date);
+            row.Date = t.Date;
             row.Amount = t.Amount ?? 0m;
             row.Merchant = t.MerchantName ?? t.Name;
             row.Category = t.PersonalFinanceCategory?.Primary;
             row.Pending = t.Pending ?? false;
-            row.Source = "plaid";
+            row.Source = "plaid"; 
 
             if (existing == null)
                 _db.Transactions.Add(row); 
         }
-
-        private string Encrpyt(string value) => value;
-        private string Decrypt(string value) => value;
-
-
 
     }
 }
