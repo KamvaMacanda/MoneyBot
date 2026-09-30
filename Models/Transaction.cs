@@ -16,8 +16,10 @@
 
         public bool Pending { get; set; }
 
+        //mono  and csv 
         public string Source { get; set; } = "";
 
+        public bool IsCategoryManual { get; set; }
 
     }
 }
