@@ -1,16 +1,18 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using MoneyBot.Services;
 using System.Security.Claims;
 
 namespace MoneyBot.Controllers
 {
+    [ApiController]
+    [Route("api/mono")]
+    [Authorize]
     public class MonoController
     {
-        [ApiController]
-        [Route("api/mono")]
-       // [Authorize]
+  
 
-        public class MonoControllers : ControllerBase
+        public class MonoControllers : Controller
         {
             private readonly MonoService _monoService;
 

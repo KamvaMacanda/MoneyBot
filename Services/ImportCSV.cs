@@ -11,12 +11,12 @@ namespace MoneyBot.Services
 
 
 
-        public ImportCSV(AppDbContext db , IEnumerable<IBankCSVMapper> mappers>)
+        public ImportCSV(AppDbContext db, IEnumerable<IBankCSVMapper> mappers>)
         {
             _db = db;
             _mappers = mappers.ToDictionary(
                 m => m.BankName,
-                StringComparer.OrdinalIgnoreCase); 
+                StringComparer.OrdinalIgnoreCase);
 
         }
 
@@ -63,5 +63,6 @@ namespace MoneyBot.Services
             return imported;
 
 
-        } 
+        }
+    }
 }
