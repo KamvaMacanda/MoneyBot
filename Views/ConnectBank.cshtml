@@ -1,0 +1,74 @@
+@page
+@model MoneyBot.Views.ConnectBankModel
+@{
+    ViewData["Title"] = "Connect Bank";
+}
+
+<div class="bank-shell" style="max-width: 720px; margin: 40px auto; padding: 24px;">
+    <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 32px; backdrop-filter: blur(12px);">
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 24px;">
+            <span class="brand-dot" style="width: 10px; height: 10px; background: #10b981; border-radius: 50%; box-shadow: 0 0 10px #10b981;"></span>
+            <h1 style="font-size: 24px; font-weight: 600; margin: 0; color: #fff;">Connect Your Bank Account</h1>
+        </div>
+
+        <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin-bottom: 24px;">
+            Securely connect your financial institution via Plaid to view your transactions and get automated telemetry insights in MoneyBot.
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start;">
+            <button id="linkButton" type="button" class="send-btn" style="padding: 12px 28px; width: auto; height: auto; border-radius: 10px; font-weight: 500; font-size: 15px; cursor: pointer;" @(string.IsNullOrEmpty(Model.LinkToken) ? "disabled" : "")>
+                Connect bank
+            </button>
+
+            <a asp-page="/Transactions" style="color: rgba(255, 255, 255, 0.5); font-size: 14px; text-decoration: none; margin-top: 8px;">
+                &larr; View Synced Transactions
+            </a>
+        </div>
+
+        <form id="exchangeForm" method="post" asp-page-handler="Exchange" style="display: none;">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="publicTokenInput" name="publicToken" value="" />
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
+    <script>
+        (function () {
+            const linkToken = "@Model.LinkToken";
+            const linkButton = document.getElementById("linkButton");
+            const exchangeForm = document.getElementById("exchangeForm");
+            const publicTokenInput = document.getElementById("publicTokenInput");
+
+            if (!linkToken) {
+                console.warn("No Plaid Link token available.");
+                return;
+            }
+
+            const handler = Plaid.create({
+                token: linkToken,
+                onSuccess: function (public_token, metadata) {
+                    publicTokenInput.value = public_token;
+                    exchangeForm.submit();
+                },
+                onExit: function (err, metadata) {
+                    if (err != null) {
+                        console.error("Plaid link exited with error:", err);
+                    }
+                }
+            });
+
+            linkButton.addEventListener("click", function () {
+                handler.open();
+            });
+        })();
+    </script>
+}

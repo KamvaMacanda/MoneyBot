@@ -20,8 +20,12 @@ namespace MoneyBot.Controllers
             _db = db;
         }
 
+        //gets the ID of the logged-in user 
+        private string GetUserId()
+        {
+            return User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+        }
 
-        private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!; 
 
         //Returing user transactions 
         [HttpGet]
@@ -29,7 +33,7 @@ namespace MoneyBot.Controllers
         {
             var userId = GetUserId();
             var transactions = await _db.Transactions
-                .Where(t => t.UserId == userId)
+                .Where(t => t.UserID == userId)
                 .OrderByDescending(t => t.Date)
                 .ToListAsync();
 
@@ -38,15 +42,21 @@ namespace MoneyBot.Controllers
         }
 
 
-        //update path 
+        //changes the category of one transaction
 
         [HttpPatch("{id}/category")]
         public async Task<IActionResult> UpdateCategory(string id, [FromBody] string category)
         {
             var userId = GetUserId();
-            var txn = await _db.Transactions.FirstOrDefaultAsync(t => t.TransactionId == id && t.UserId == userId);
+            var txn = await _db.Transactions.FirstOrDefaultAsync(
+                t => t.TransactionId == id &&
+                t.UserID == userId);
 
-            if (txn == null) return NotFound();
+            if (txn == null)
+            {
+                return NotFound();
+            }
+          
 
             txn.Category = category;
             txn.IsCategoryManual = true;

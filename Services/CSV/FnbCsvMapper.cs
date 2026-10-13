@@ -2,7 +2,7 @@
 {
     // FNB :
     // negative = money out, flip to our convention
-    public class FNB : IBankCSVMapper
+    public class FnbCsvMapper : IBankCSVMapper
     {
         public string BankName => "FNB";
 

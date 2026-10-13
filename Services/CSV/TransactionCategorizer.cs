@@ -3,11 +3,11 @@
     public class TransactionCategorizer
     { 
 
-        //Use .CONTAINS 
-        private static readonly Dictionary<string, string> Rules = new(StringComparer.OrdinalIgnoreCase)
+   //Manually import data with keyword and category 
+        private static readonly Dictionary<string, string> Rules = new Dictionary< string, string>
         {
             ["WOOLWORTHS"] = "groceries",
-            ["CHECKERS"] = "groceries",
+            ["CHECKERS"] = "groceries", 
             ["PICK N PAY"] = "groceries",
             ["SPAR"] = "groceries",
             ["UBER"] = "transport",
@@ -19,11 +19,17 @@
 
         public static string Categorize(string description)
         {
-            foreach (var (keyword, category) in Rules)
-                if (description.Contains(keyword, StringComparison.OrdinalIgnoreCase))
-                    return category;
+            foreach (var rule in Rules)
+            {
+                if (description.Contains(rule.Key, StringComparison.OrdinalIgnoreCase))
+                {
+                    return rule.Value;
+                }
+            }
 
             return "uncategorized";
         }
+
+
     }
 }

@@ -1,6 +1,6 @@
 ﻿namespace MoneyBot.Services.CSV
 {
-    public interface IBankCSVMapper
+    public interface IBankCSVMapper 
     {
 
         string BankName { get; }

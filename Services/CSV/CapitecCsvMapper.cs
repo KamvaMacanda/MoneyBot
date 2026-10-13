@@ -1,6 +1,6 @@
 ﻿namespace MoneyBot.Services.CSV
 {
-    public class Capitec : IBankCSVMapper
+    public class CapitecCsvMapper : IBankCSVMapper
     {
         public string BankName => "Capitec";
 
