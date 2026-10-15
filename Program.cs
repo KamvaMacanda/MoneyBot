@@ -1,46 +1,64 @@
 using Going.Plaid;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using MoneyBot.Data;
 using MoneyBot.Models;
 using MoneyBot.Services;
 using MoneyBot.Services.CSV;
+using PlaidEnv = Going.Plaid.Environment;
 
-
-DotNetEnv.Env.Load(); 
+DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? System.Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")));
 
 builder.Services.AddDataProtection();
 
-// Register framework services required by the middleware you use
+// Register framework services
 builder.Services.AddRazorPages(options =>
 {
     options.RootDirectory = "/Views";
-}); 
+});
 
-builder.Services.AddControllers(); 
-builder.Services.AddAuthorization(); 
+builder.Services.AddControllers();
+builder.Services.AddAuthorization();
 
-builder.Services.AddScoped<ChatBotLogic>(); 
-
+builder.Services.AddScoped<ChatBotLogic>();
 builder.Services.AddScoped<ImportCSV>();
 
 builder.Services.AddSingleton<IBankCSVMapper, FnbCsvMapper>();
-
 builder.Services.AddSingleton<IBankCSVMapper, CapitecCsvMapper>();
 
-var plaidEnv = builder.Configuration["Plaid:Environment"] switch
-{
-    "Production" => Going.Plaid.Environment.Production,
-    _ => Going.Plaid.Environment.Sandbox
-};
-builder.Services.AddSingleton(sp => new PlaidClient(plaidEnv));
+// Configure PlaidOptions with Environment, ClientId, and Secret
+var plaidEnvStr = (System.Environment.GetEnvironmentVariable("PLAID_ENV")
+    ?? builder.Configuration["Plaid:Environment"])?.Trim().ToLowerInvariant();
 
-builder.Services.AddScoped<PlaidService>(); 
+var targetPlaidEnv = plaidEnvStr switch
+{
+    "production" => PlaidEnv.Production,
+    "development" => PlaidEnv.Development,
+    _ => PlaidEnv.Sandbox
+};
+
+builder.Services.Configure<PlaidOptions>(options =>
+{
+    options.Environment = targetPlaidEnv;
+    options.ClientId = System.Environment.GetEnvironmentVariable("PLAID_CLIENT_ID")
+        ?? builder.Configuration["Plaid:ClientId"]
+        ?? string.Empty;
+    options.Secret = System.Environment.GetEnvironmentVariable("PLAID_SECRET")
+        ?? builder.Configuration["Plaid:Secret"]
+        ?? string.Empty;
+});
+
+// PlaidClient consumes IOptions<PlaidOptions> directly
+builder.Services.AddSingleton<PlaidClient>();
+
+builder.Services.AddScoped<PlaidService>();
 
 var app = builder.Build();
 
@@ -52,17 +70,11 @@ app.UseExceptionHandler(errApp =>
         context.Response.ContentType = "application/json";
         await context.Response.WriteAsJsonAsync(new { error = "Something went wrong. Please try again." });
     });
-}); 
+});
 
-
- 
-
-
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
-    app.MapOpenApi(); 
-
+    app.MapOpenApi();
 }
 
 app.UseHttpsRedirection();
@@ -70,7 +82,6 @@ app.UseStaticFiles();
 
 app.UseRouting();
 app.UseAuthorization();
-
 
 app.MapRazorPages();
 app.MapControllers();
