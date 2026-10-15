@@ -35,6 +35,13 @@ namespace MoneyBot.Services
             _logger = logger;
         }
 
+
+        private void LogPlaidError(string operation, PlaidError? error, string userId)
+        {
+            _logger.LogError(
+                "Plaid {Operation} failed for user {UserId}: {ErrorCode} - {ErrorMessage}",
+                operation, userId, error?.ErrorCode, error?.ErrorMessage);
+        }
         public async Task<string> CreateLinkTokenAsync(string userId)
         {
             try
@@ -47,6 +54,11 @@ namespace MoneyBot.Services
                     CountryCodes = new[] { CountryCode.Us },
                     Language = Language.English,
                 });
+
+
+                if (!response.IsSuccessStatusCode)
+                    _logger.LogError("Plaid error: {Code} {Message}", response.Error?.ErrorCode, response.Error?.ErrorMessage);
+
                 return response.LinkToken;
             }
             catch (HttpRequestException ex)
@@ -62,6 +74,13 @@ namespace MoneyBot.Services
             {
                 var exchange = await _plaid.ItemPublicTokenExchangeAsync(
                     new Going.Plaid.Item.ItemPublicTokenExchangeRequest { PublicToken = publicToken });
+
+                if (!exchange.IsSuccessStatusCode || string.IsNullOrEmpty(exchange.AccessToken))
+                {
+                    LogPlaidError("public token exchange", exchange.Error, userId);
+                    throw new InvalidOperationException("Couldn't finish connecting that bank. Please try linking again.");
+                }
+
 
                 // Explicitly use the DB model type to avoid ambiguity with Going.Plaid.Entity.Item
                 _db.Items.Add(new MoneyBot.Models.Item
@@ -92,6 +111,7 @@ namespace MoneyBot.Services
                 {
                     var accessToken = _protector.Unprotect(item.PlaidAccessTokenEnc);
                     bool hasMore = true;
+                    bool failed = false;
                     string? cursor = item.Cursor;
 
                     while (hasMore)
@@ -101,6 +121,13 @@ namespace MoneyBot.Services
                             AccessToken = accessToken,
                             Cursor = cursor,
                         });
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            LogPlaidError("transaction sync", response.Error, userId);
+                            failed = true;
+                            break;
+                        }
 
                         foreach (var t in response.Added.Concat(response.Modified))
                             UpsertTransaction(userId, t);
@@ -116,7 +143,10 @@ namespace MoneyBot.Services
                         hasMore = response.HasMore;
                     }
 
-                    item.Cursor = cursor;
+                    // Only advance the cursor if the whole sync succeeded, so a failed
+                    // run is retried from the last good point next time.
+                    if (!failed)
+                        item.Cursor = cursor;
                 }
                 catch (Exception ex) when (ex is HttpRequestException or System.Security.Cryptography.CryptographicException)
                 {
@@ -127,6 +157,7 @@ namespace MoneyBot.Services
 
             await _db.SaveChangesAsync();
         }
+
 
         private void UpsertTransaction(string userId, PlaidTransaction t)
         {
