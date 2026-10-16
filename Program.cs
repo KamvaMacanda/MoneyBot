@@ -5,6 +5,7 @@ using MoneyBot.Data;
 using MoneyBot.Models;
 using MoneyBot.Services;
 using MoneyBot.Services.CSV;
+using Supabase.Extensions.DependencyInjection;
 using PlaidEnv = Going.Plaid.Environment;
 
 DotNetEnv.Env.Load();
@@ -66,6 +67,14 @@ builder.Services.Configure<PlaidOptions>(options =>
 builder.Services.AddSingleton<PlaidClient>();
 
 builder.Services.AddScoped<PlaidService>();
+
+// Safely register Supabase Client if URL and Key are provided
+var supabaseUrl = builder.Configuration["Supabase:Url"];
+var supabaseKey = builder.Configuration["Supabase:Key"];
+if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supabaseKey))
+{
+    builder.Services.AddSupabase(supabaseUrl, supabaseKey);
+}
 
 var app = builder.Build();
 
