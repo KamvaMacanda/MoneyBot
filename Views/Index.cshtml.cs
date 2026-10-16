@@ -1,9 +1,10 @@
-using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using MoneyBot.Data;
+using MoneyBot.Models;
 using MoneyBot.Services;
+using System.Security.Claims;
 
 namespace MoneyBot.Views
 {
@@ -11,35 +12,54 @@ namespace MoneyBot.Views
     public class IndexModel : PageModel
     {
         private readonly ChatBotLogic _chatLogic;
+        private readonly PlaidService _plaidService;
         private readonly AppDbContext _db;
         private readonly ILogger<IndexModel> _logger;
 
-        public IndexModel(ChatBotLogic chatLogic, AppDbContext db, ILogger<IndexModel> logger)
+        public IndexModel(
+            ChatBotLogic chatLogic, 
+            PlaidService plaidService, 
+            AppDbContext db, 
+            ILogger<IndexModel> logger)
         {
             _chatLogic = chatLogic;
+            _plaidService = plaidService;
             _db = db;
             _logger = logger;
         }
 
         // Real bank balances 
         public decimal TotalBalance { get; set; } = 0m;
+        public decimal RandBalance { get; set; } = 0m;
         public decimal MonthlyOutflow { get; set; }
         public decimal MonthlyInflow { get; set; }
         public decimal SavingsRate { get; set; }
         public int ActiveSubscriptionsCount { get; set; }
         public decimal SubscriptionsMonthlyTotal { get; set; }
 
+        public List<AccountDetail> ConnectedAccounts { get; set; } = new();
 
-        //Contacts Plaid API for live account balances and aggregates database telemetry.
+        // Contacts Plaid API for live account balances and aggregates database telemetry.
         public async Task OnGetAsync()
         {
             var userId = GetUserId();
+            // Fetch real, live account balances directly from Plaid API converted to ZAR
+            try
+            {
+                ConnectedAccounts = await _plaidService.GetLiveAccountBalancesAsync(userId);
+                TotalBalance = ConnectedAccounts.Sum(a => a.RandBalance);
+                RandBalance = TotalBalance;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to load live Plaid balances for user {UserId}", userId);
+            }
+
+            // Compute dynamic database transaction telemetry
             try
             {
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var startOfMonth = new DateOnly(today.Year, today.Month, 1);
-             
-
                 var thisMonthTxns = await _db.Transactions
                     .Where(t => t.UserID == userId && t.Date >= startOfMonth && t.Date <= today)
                     .ToListAsync();
@@ -71,7 +91,6 @@ namespace MoneyBot.Views
             try
             {
                 var userId = GetUserId();
-                // Direct call to ChatBotLogic service
                 var reply = await _chatLogic.AskAsync(userId, request.Message);
                 return new JsonResult(new { reply });
             }

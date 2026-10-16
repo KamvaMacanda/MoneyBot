@@ -16,8 +16,10 @@
         <div class="sidebar-scrollable">
             <!-- Total Liquid Balance -->
             <div class="sidebar-summary-card">
-                <span class="summary-label">Total Balance</span>
-                <div class="summary-amount tabular-nums" id="totalBalanceDisplay">R 84,230.50</div>
+                <span class="summary-label">Total Liquid Balance</span>
+                <div class="summary-amount tabular-nums" id="totalBalanceDisplay">
+                    R @Model.TotalBalance.ToString("N2")
+                </div>
                 <div class="summary-subtext">
                     <span class="status-positive tabular-nums">+4.2%</span> vs last month
                 </div>
@@ -26,38 +28,38 @@
             <!-- Connected Accounts --> 
             <!-- Note: These are static mockups for demonstration purposes. In a real application, this would be dynamically generated from the user's connected accounts. -->
             <div class="sidebar-section">
-                <div class="sidebar-section-title">Connected Accounts</div>
+                <div class="sidebar-section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span class="sidebar-section-title" style="margin-bottom: 0;">Connected Accounts</span>
+                    <a asp-page="/ConnectBank" class="new-chat-btn" style="text-decoration: none; padding: 2px 7px; font-size: 11px;">
+                        + Connect
+                    </a>
+                </div>
                 <div class="accounts-list">
-                    <div class="account-item">
-                        <div class="account-item-top">
-                            <span class="account-name">Premier Cheque</span>
-                            <span class="account-balance tabular-nums">R 24,650.00</span>
+                    @if (Model.ConnectedAccounts.Count == 0)
+                    {
+                        <div style="font-size: 12px; color: var(--text-tertiary); padding: 8px; text-align: center; border: 1px dashed var(--border-faint); border-radius: 6px;">
+                            No bank connected yet.<br />
+                            <a asp-page="/ConnectBank" style="color: var(--color-positive); text-decoration: none; font-weight: 500;">Connect with Plaid</a>
                         </div>
-                        <div class="account-item-bottom">
-                            <span class="account-mask">•••• 4092</span>
-                            <span class="account-inst">FNB</span>
-                        </div>
-                    </div>
-                    <div class="account-item">
-                        <div class="account-item-top">
-                            <span class="account-name">Growth Vault</span>
-                            <span class="account-balance status-positive tabular-nums">R 59,580.50</span>
-                        </div>
-                        <div class="account-item-bottom">
-                            <span class="account-mask">•••• 8819</span>
-                            <span class="account-inst">Capitec</span>
-                        </div>
-                    </div>
-                    <div class="account-item">
-                        <div class="account-item-top">
-                            <span class="account-name">Platinum Credit</span>
-                            <span class="account-balance status-negative tabular-nums">-R 3,210.00</span>
-                        </div>
-                        <div class="account-item-bottom">
-                            <span class="account-mask">•••• 1104</span>
-                            <span class="account-inst">FNB</span>
-                        </div>
-                    </div>
+                    }
+                    else
+                    {
+                        @foreach (var acc in Model.ConnectedAccounts)
+                        {
+                            <div class="account-item">
+                                <div class="account-item-top">
+                                    <span class="account-name">@acc.Name</span>
+                                    <span class="account-balance tabular-nums @(acc.IsNegative ? "status-negative" : (acc.IsPositive ? "status-positive" : ""))">
+                                        @(acc.RandBalance < 0 ? $"-R {Math.Abs(acc.RandBalance):N2}" : $"R {acc.RandBalance:N2}")
+                                    </span>
+                                </div>
+                                <div class="account-item-bottom">
+                                    <span class="account-mask">@acc.Mask</span>
+                                    <span class="account-inst">@acc.Institution</span>
+                                </div>
+                            </div>
+                        }
+                    }
                 </div>
             </div>
 

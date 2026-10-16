@@ -36,13 +36,13 @@ namespace MoneyBot.Services
             _logger = logger;
         }
 
-
         private void LogPlaidError(string operation, PlaidError? error, string userId)
         {
             _logger.LogError(
                 "Plaid {Operation} failed for user {UserId}: {ErrorCode} - {ErrorMessage}",
                 operation, userId, error?.ErrorCode, error?.ErrorMessage);
         }
+
         public async Task<string> CreateLinkTokenAsync(string userId)
         {
             try
@@ -55,7 +55,6 @@ namespace MoneyBot.Services
                     CountryCodes = new[] { CountryCode.Us },
                     Language = Language.English,
                 });
-
 
                 if (!response.IsSuccessStatusCode)
                     _logger.LogError("Plaid error: {Code} {Message}", response.Error?.ErrorCode, response.Error?.ErrorMessage);
@@ -82,14 +81,13 @@ namespace MoneyBot.Services
                     throw new InvalidOperationException("Couldn't finish connecting that bank. Please try linking again.");
                 }
 
-
                 // Explicitly use the DB model type to avoid ambiguity with Going.Plaid.Entity.Item
                 _db.Items.Add(new MoneyBot.Models.Item
                 {
                     UserId = userId,
                     PlaidAccessTokenEnc = _protector.Protect(exchange.AccessToken),
                     Cursor = null,
-                    BankName = "Unknown",
+                    BankName = "Connected Bank",
                 });
 
                 await _db.SaveChangesAsync();
@@ -102,14 +100,10 @@ namespace MoneyBot.Services
             }
         }
 
-
-
- 
-           /// <summary>
-           /// Fetches real, live account balances directly from Plaid's /accounts/balance/get endpoint
-           /// for every bank connected by the user, and converts balances from USD to South African Rand (ZAR).
-           /// </summary>
-
+        /// <summary>
+        /// Fetches real, live account balances directly from Plaid's /accounts/balance/get endpoint
+        /// for every bank connected by the user, and converts balances from USD to South African Rand (ZAR).
+        /// </summary>
         public async Task<List<AccountDetail>> GetLiveAccountBalancesAsync(string userId, decimal usdToZarExchangeRate = 18.25m)
         {
             var results = new List<AccountDetail>();
@@ -124,7 +118,6 @@ namespace MoneyBot.Services
                     // Decrypt the stored access token using ASP.NET Core Data Protection
                     var accessToken = _protector.Unprotect(item.PlaidAccessTokenEnc);
 
-                    // Call Plaid API: /accounts/balance/get
                     var balanceResponse = await _plaid.AccountsBalanceGetAsync(new AccountsBalanceGetRequest
                     {
                         AccessToken = accessToken
@@ -144,7 +137,7 @@ namespace MoneyBot.Services
                         var isCredit = acc.Type == AccountType.Credit;
                         var currency = acc.Balances.IsoCurrencyCode ?? "USD";
 
-                        // Currency conversion , convert USD to South African Rand (ZAR)
+                        // Currency conversion: convert USD to South African Rand (ZAR)
                         decimal balanceInZar;
                         if (string.Equals(currency, "USD", StringComparison.OrdinalIgnoreCase))
                         {
@@ -152,7 +145,6 @@ namespace MoneyBot.Services
                         }
                         else
                         {
-                            // If Plaid already reports in ZAR or another currency, use as-is or adjust rate
                             balanceInZar = rawBalance;
                         }
 
@@ -169,6 +161,7 @@ namespace MoneyBot.Services
                             Mask = !string.IsNullOrWhiteSpace(acc.Mask) ? $"•••• {acc.Mask}" : "••••",
                             Institution = !string.IsNullOrWhiteSpace(item.BankName) ? item.BankName : "Connected Bank",
                             Balance = rawBalance,
+                            RandBalance = balanceInZar,
                             ConvertedBalance = balanceInZar,
                             Currency = "ZAR",
                             IsPositive = !isCredit && balanceInZar >= 0,
@@ -178,15 +171,12 @@ namespace MoneyBot.Services
                 }
                 catch (Exception ex)
                 {
-                   
                     _logger.LogError(ex, "Failed to fetch live Plaid balance for item {ItemId}, user {UserId}", item.Id, userId);
                 }
             }
 
             return results;
         }
-
-
 
         public async Task SyncTransactionsAsync(string userId)
         {
@@ -244,7 +234,6 @@ namespace MoneyBot.Services
 
             await _db.SaveChangesAsync();
         }
-
 
         private void UpsertTransaction(string userId, PlaidTransaction t)
         {
