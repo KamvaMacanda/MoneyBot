@@ -101,11 +101,61 @@ namespace MoneyBot.Services
             }
         }
 
-  
-     
 
-     
+        /// <summary>
+        ///  Fetches real, live account balances directly from Plaid's for every bank connected by the user
+        //
+        /// </summary>
 
+        public async Task<List<AccountDetail>> GetLiveAccountBalancesAsync(string userId)
+        {
+            var results = new List<AccountDetail>();
+            var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
+            foreach (var item in items)
+            {
+                try
+                {
+                    var accessToken = _protector.Unprotect(item.PlaidAccessTokenEnc);
+                    // Call Plaid accounts balance API
+                    var balanceResponse = await _plaid.AccountsBalanceGetAsync(new AccountsBalanceGetRequest
+                    {
+                        AccessToken = accessToken
+                    });
+                    if (!balanceResponse.IsSuccessStatusCode || balanceResponse.Accounts == null)
+                    {
+                        LogPlaidError("accounts balance get", balanceResponse.Error, userId);
+                        continue;
+                    }
+                    foreach (var acc in balanceResponse.Accounts)
+                    {
+                        // Plaid current or available balance
+                        var balance = acc.Balances.Current ?? acc.Balances.Available ?? 0m;
+
+                        var isCredit = acc.Type == AccountType.Credit;
+                        results.Add(new AccountDetail
+                        {
+                            AccountId = acc.AccountId,
+                            Name = acc.Name,
+
+                            Mask = acc.Mask != null ? $"*** {acc.Mask}" : "****",
+                            Institution = item.BankName ?? "Connected Bank", 
+
+                            // Credit balances represent debt (outflow), so we negate for net worth accounting
+
+                            Balance = isCredit ? -Math.Abs(balance) : balance,
+                            Currency = acc.Balances.IsoCurrencyCode ?? "RSA",
+                            IsPositive = !isCredit && balance >= 0,
+                            IsNegative = isCredit || balance < 0
+                        });
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Failed to fetch live Plaid balance for item {ItemId}, user {UserId}", item.Id, userId);
+                }
+            }
+            return results;
+        }
 
 
 
