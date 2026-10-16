@@ -1,4 +1,5 @@
 using Going.Plaid;
+using Going.Plaid.Accounts;
 using Going.Plaid.Entity;       
 using Going.Plaid.Link;
 using Going.Plaid.Transactions;
@@ -8,8 +9,8 @@ using Microsoft.Extensions.Logging;
 using MoneyBot.Data;
 using MoneyBot.Models;
 using MoneyBot.Services.CSV;
-using PlaidTransaction = Going.Plaid.Entity.Transaction;
 using AppTransaction = MoneyBot.Models.Transaction;
+using PlaidTransaction = Going.Plaid.Entity.Transaction;
 
 namespace MoneyBot.Services
 {
@@ -102,58 +103,86 @@ namespace MoneyBot.Services
         }
 
 
-        /// <summary>
-        ///  Fetches real, live account balances directly from Plaid's for every bank connected by the user
-        //
-        /// </summary>
 
-        public async Task<List<AccountDetail>> GetLiveAccountBalancesAsync(string userId)
+ 
+           /// <summary>
+           /// Fetches real, live account balances directly from Plaid's /accounts/balance/get endpoint
+           /// for every bank connected by the user, and converts balances from USD to South African Rand (ZAR).
+           /// </summary>
+
+        public async Task<List<AccountDetail>> GetLiveAccountBalancesAsync(string userId, decimal usdToZarExchangeRate = 18.25m)
         {
             var results = new List<AccountDetail>();
+
+            // Retrieve all connected bank items for this user from PostgreSQL
             var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
+
             foreach (var item in items)
             {
                 try
                 {
+                    // Decrypt the stored access token using ASP.NET Core Data Protection
                     var accessToken = _protector.Unprotect(item.PlaidAccessTokenEnc);
-                    // Call Plaid accounts balance API
+
+                    // Call Plaid API: /accounts/balance/get
                     var balanceResponse = await _plaid.AccountsBalanceGetAsync(new AccountsBalanceGetRequest
                     {
                         AccessToken = accessToken
                     });
+
                     if (!balanceResponse.IsSuccessStatusCode || balanceResponse.Accounts == null)
                     {
                         LogPlaidError("accounts balance get", balanceResponse.Error, userId);
                         continue;
                     }
+
+                    // Process each live account returned by Plaid
                     foreach (var acc in balanceResponse.Accounts)
                     {
-                        // Plaid current or available balance
-                        var balance = acc.Balances.Current ?? acc.Balances.Available ?? 0m;
-
+                        // Extract current or available balance directly from Plaid telemetry
+                        var rawBalance = acc.Balances.Current ?? acc.Balances.Available ?? 0m;
                         var isCredit = acc.Type == AccountType.Credit;
+                        var currency = acc.Balances.IsoCurrencyCode ?? "USD";
+
+                        // Currency conversion , convert USD to South African Rand (ZAR)
+                        decimal balanceInZar;
+                        if (string.Equals(currency, "USD", StringComparison.OrdinalIgnoreCase))
+                        {
+                            balanceInZar = rawBalance * usdToZarExchangeRate;
+                        }
+                        else
+                        {
+                            // If Plaid already reports in ZAR or another currency, use as-is or adjust rate
+                            balanceInZar = rawBalance;
+                        }
+
+                        // For credit cards, balance represents an outflow/debt
+                        if (isCredit)
+                        {
+                            balanceInZar = -Math.Abs(balanceInZar);
+                        }
+
                         results.Add(new AccountDetail
                         {
                             AccountId = acc.AccountId,
                             Name = acc.Name,
-
-                            Mask = acc.Mask != null ? $"*** {acc.Mask}" : "****",
-                            Institution = item.BankName ?? "Connected Bank", 
-
-                            // Credit balances represent debt (outflow), so we negate for net worth accounting
-
-                            Balance = isCredit ? -Math.Abs(balance) : balance,
-                            Currency = acc.Balances.IsoCurrencyCode ?? "RSA",
-                            IsPositive = !isCredit && balance >= 0,
-                            IsNegative = isCredit || balance < 0
+                            Mask = !string.IsNullOrWhiteSpace(acc.Mask) ? $"•••• {acc.Mask}" : "••••",
+                            Institution = !string.IsNullOrWhiteSpace(item.BankName) ? item.BankName : "Connected Bank",
+                            Balance = rawBalance,
+                            ConvertedBalance = balanceInZar,
+                            Currency = "ZAR",
+                            IsPositive = !isCredit && balanceInZar >= 0,
+                            IsNegative = isCredit || balanceInZar < 0
                         });
                     }
                 }
                 catch (Exception ex)
                 {
+                   
                     _logger.LogError(ex, "Failed to fetch live Plaid balance for item {ItemId}, user {UserId}", item.Id, userId);
                 }
             }
+
             return results;
         }
 

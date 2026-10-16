@@ -12,7 +12,8 @@
         public string Mask { get; set; } = string.Empty;
         public string Institution { get; set; } = string.Empty;
         public decimal Balance { get; set; }
-        public string Currency { get; set; } = "RSA";
+        public decimal ConvertedBalance { get; set; }
+        public string Currency { get; set; } = "USD";
         public bool IsPositive { get; set; }
         public bool IsNegative { get; set; }
     }

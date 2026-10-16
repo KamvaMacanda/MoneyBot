@@ -21,13 +21,16 @@ namespace MoneyBot.Views
             _logger = logger;
         }
 
-        public decimal TotalBalance { get; set; } = 84230.50m;
+        // Real bank balances 
+        public decimal TotalBalance { get; set; } = 0m;
         public decimal MonthlyOutflow { get; set; }
         public decimal MonthlyInflow { get; set; }
         public decimal SavingsRate { get; set; }
         public int ActiveSubscriptionsCount { get; set; }
         public decimal SubscriptionsMonthlyTotal { get; set; }
 
+
+        //Contacts Plaid API for live account balances and aggregates database telemetry.
         public async Task OnGetAsync()
         {
             var userId = GetUserId();
@@ -35,6 +38,7 @@ namespace MoneyBot.Views
             {
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var startOfMonth = new DateOnly(today.Year, today.Month, 1);
+             
 
                 var thisMonthTxns = await _db.Transactions
                     .Where(t => t.UserID == userId && t.Date >= startOfMonth && t.Date <= today)
