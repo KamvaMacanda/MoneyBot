@@ -56,19 +56,22 @@ namespace MoneyBot.Services
                     Language = Language.English,
                 });
 
-                if (!response.IsSuccessStatusCode)
-                    _logger.LogError("Plaid error: {Code} {Message}", response.Error?.ErrorCode, response.Error?.ErrorMessage);
+                if (!response.IsSuccessStatusCode || string.IsNullOrEmpty(response.LinkToken))
+                {
+                    LogPlaidError("link token create", response.Error, userId);
+                    throw new InvalidOperationException(response.Error?.ErrorMessage ?? "Plaid rejected link token creation.");
+                }
 
                 return response.LinkToken;
             }
             catch (HttpRequestException ex)
             {
                 _logger.LogError(ex, "Plaid link-token request failed for user {UserId}", userId);
-                throw new InvalidOperationException("Couldn't start the bank connection. Please try again shortly.");
+                throw new InvalidOperationException("Couldn't start the bank connection. Please verify your Plaid credentials and network.");
             }
         }
 
-        public async Task ExchangePublicTokenAsync(string userId, string publicToken)
+        public async Task ExchangePublicTokenAsync(string userId, string publicToken, string? institutionName = null)
         {
             try
             {
@@ -78,25 +81,46 @@ namespace MoneyBot.Services
                 if (!exchange.IsSuccessStatusCode || string.IsNullOrEmpty(exchange.AccessToken))
                 {
                     LogPlaidError("public token exchange", exchange.Error, userId);
-                    throw new InvalidOperationException("Couldn't finish connecting that bank. Please try linking again.");
+                    var msg = exchange.Error?.ErrorMessage ?? "Plaid rejected public token exchange.";
+                    throw new InvalidOperationException(msg);
                 }
 
-                // Explicitly use the DB model type to avoid ambiguity with Going.Plaid.Entity.Item
-                _db.Items.Add(new MoneyBot.Models.Item
+                var bankTitle = !string.IsNullOrWhiteSpace(institutionName) ? institutionName : "Connected Bank";
+
+                // Save or update existing bank item
+                var existingItem = await _db.Items.FirstOrDefaultAsync(i => i.UserId == userId && i.BankName == bankTitle);
+                if (existingItem != null)
                 {
-                    UserId = userId,
-                    PlaidAccessTokenEnc = _protector.Protect(exchange.AccessToken),
-                    Cursor = null,
-                    BankName = "Connected Bank",
-                });
+                    existingItem.PlaidAccessTokenEnc = _protector.Protect(exchange.AccessToken);
+                    existingItem.Cursor = null; // reset sync cursor on re-link
+                }
+                else
+                {
+                    _db.Items.Add(new MoneyBot.Models.Item
+                    {
+                        UserId = userId,
+                        PlaidAccessTokenEnc = _protector.Protect(exchange.AccessToken),
+                        Cursor = null,
+                        BankName = bankTitle,
+                    });
+                }
 
                 await _db.SaveChangesAsync();
-                await SyncTransactionsAsync(userId);
+
+                // Sync transactions immediately after exchange, but do not fail exchange if sync experiences minor initial delay
+                try
+                {
+                    await SyncTransactionsAsync(userId);
+                }
+                catch (Exception syncEx)
+                {
+                    _logger.LogWarning(syncEx, "Initial sync for user {UserId} experienced an issue, but token exchange succeeded.", userId);
+                }
             }
             catch (HttpRequestException ex)
             {
-                _logger.LogError(ex, "Plaid token exchange failed for user {UserId}", userId);
-                throw new InvalidOperationException("Couldn't finish connecting that bank. Please try linking again.");
+                _logger.LogError(ex, "Plaid token exchange HTTP request failed for user {UserId}", userId);
+                throw new InvalidOperationException("Network error connecting to Plaid. Please try again.");
             }
         }
 

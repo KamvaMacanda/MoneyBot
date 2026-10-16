@@ -5,6 +5,7 @@ using MoneyBot.Services;
 
 namespace MoneyBot.Views
 {
+    [IgnoreAntiforgeryToken(Order = 1001)]
     public class ConnectBankModel : PageModel
     {
         private readonly PlaidService _plaidService;
@@ -29,13 +30,13 @@ namespace MoneyBot.Views
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to create Plaid link token on ConnectBank page.");
-                ErrorMessage = "Could not initialize bank connection. Please verify your Plaid credentials and try again.";
+                ErrorMessage = ex.Message ?? "Could not initialize bank connection. Please check Plaid configuration.";
             }
 
             return Page();
         }
 
-        public async Task<IActionResult> OnPostExchangeAsync([FromForm] string publicToken)
+        public async Task<IActionResult> OnPostExchangeAsync([FromForm] string publicToken, [FromForm] string? institutionName)
         {
             if (string.IsNullOrWhiteSpace(publicToken))
             {
@@ -46,13 +47,14 @@ namespace MoneyBot.Views
             try
             {
                 var userId = GetUserId();
-                await _plaidService.ExchangePublicTokenAsync(userId, publicToken);
-                return RedirectToPage("/Transactions");
+                await _plaidService.ExchangePublicTokenAsync(userId, publicToken, institutionName);
+                return RedirectToPage("/Index");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exchanging public token for user.");
-                ErrorMessage = "Failed to complete bank connection. Please try linking again.";
+                var rootEx = ex.GetBaseException();
+                ErrorMessage = $"Failed to connect bank: {rootEx.Message}";
                 return Page();
             }
         }

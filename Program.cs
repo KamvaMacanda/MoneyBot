@@ -11,10 +11,17 @@ DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")
-        ?? System.Environment.GetEnvironmentVariable("DB_CONNECTION_STRING")));
+    options.UseNpgsql(
+        builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? System.Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"),
+        npgsqlOptions =>
+        {
+            npgsqlOptions.EnableRetryOnFailure(
+                maxRetryCount: 5,
+                maxRetryDelay: TimeSpan.FromSeconds(10),
+                errorCodesToAdd: null);
+        }));
 
 builder.Services.AddDataProtection();
 

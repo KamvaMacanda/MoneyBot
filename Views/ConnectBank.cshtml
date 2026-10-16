@@ -12,7 +12,7 @@
         </div>
 
         <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin-bottom: 24px;">
-            Securely connect your financial institution via Plaid to view your transactions and get automated telemetry insights in MoneyBot.
+            Securely connect your financial institution via Plaid to view your live account balances and automated telemetry insights in MoneyBot.
         </p>
 
         @if (!string.IsNullOrEmpty(Model.ErrorMessage))
@@ -23,18 +23,19 @@
         }
 
         <div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start;">
-            <button id="linkButton" type="button" class="send-btn" style="padding: 12px 28px; width: auto; height: auto; border-radius: 10px; font-weight: 500; font-size: 15px; cursor: pointer;" @(string.IsNullOrEmpty(Model.LinkToken) ? "disabled" : "")>
-                Connect bank
+            <button id="linkButton" type="button" class="send-btn" style="padding: 12px 28px; width: auto; height: auto; border-radius: 10px; font-weight: 500; font-size: 15px; cursor: pointer; background: #10b981; color: #000;" @(string.IsNullOrEmpty(Model.LinkToken) ? "disabled" : "")>
+                Connect bank with Plaid
             </button>
 
-            <a asp-page="/Transactions" style="color: rgba(255, 255, 255, 0.5); font-size: 14px; text-decoration: none; margin-top: 8px;">
-                &larr; View Synced Transactions
+            <a asp-page="/Index" style="color: rgba(255, 255, 255, 0.5); font-size: 14px; text-decoration: none; margin-top: 8px;">
+                &larr; Back to Financial Assistant
             </a>
         </div>
 
         <form id="exchangeForm" method="post" asp-page-handler="Exchange" style="display: none;">
             @Html.AntiForgeryToken()
             <input type="hidden" id="publicTokenInput" name="publicToken" value="" />
+            <input type="hidden" id="institutionNameInput" name="institutionName" value="" />
         </form>
     </div>
 </div>
@@ -47,6 +48,7 @@
             const linkButton = document.getElementById("linkButton");
             const exchangeForm = document.getElementById("exchangeForm");
             const publicTokenInput = document.getElementById("publicTokenInput");
+            const institutionNameInput = document.getElementById("institutionNameInput");
 
             if (!linkToken) {
                 console.warn("No Plaid Link token available.");
@@ -57,6 +59,9 @@
                 token: linkToken,
                 onSuccess: function (public_token, metadata) {
                     publicTokenInput.value = public_token;
+                    if (metadata && metadata.institution && metadata.institution.name) {
+                        institutionNameInput.value = metadata.institution.name;
+                    }
                     exchangeForm.submit();
                 },
                 onExit: function (err, metadata) {
