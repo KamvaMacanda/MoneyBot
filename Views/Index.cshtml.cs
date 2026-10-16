@@ -21,7 +21,7 @@ namespace MoneyBot.Views
             _logger = logger;
         }
 
-        public decimal TotalLiquidBalance { get; set; } = 84230.50m;
+        public decimal TotalBalance { get; set; } = 84230.50m;
         public decimal MonthlyOutflow { get; set; }
         public decimal MonthlyInflow { get; set; }
         public decimal SavingsRate { get; set; }

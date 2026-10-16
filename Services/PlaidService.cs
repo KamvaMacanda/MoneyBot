@@ -101,6 +101,14 @@ namespace MoneyBot.Services
             }
         }
 
+  
+     
+
+     
+
+
+
+
         public async Task SyncTransactionsAsync(string userId)
         {
             var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
