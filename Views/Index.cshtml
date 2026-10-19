@@ -5,7 +5,7 @@
 }
 
 <div class="bank-shell" id="appShell">
-    <!-- 240px Desktop Banking Sidebar (hidden below 768px) -->
+    <!-- Desktop Banking Sidebar -->
     <aside class="bank-sidebar" aria-label="Banking navigation and balances">
         <div class="brand-row">
             <span class="brand-dot" aria-hidden="true"></span>
@@ -14,17 +14,15 @@
         </div>
 
         <div class="sidebar-scrollable">
-            <!-- Total Liquid Balance -->
+            <!-- Total Liquid Balance (Dynamic) -->
             <div class="sidebar-summary-card">
-                <span class="summary-label">Total  Balance</span>
+                <span class="summary-label">Total Balance</span>
                 <div class="summary-amount tabular-nums" id="totalBalanceDisplay">
                     R @Model.TotalBalance.ToString("N2")
                 </div>
-            
             </div>
 
-            <!-- Connected Accounts --> 
-            <!-- Note: These are static mockups for demonstration purposes. In a real application, this would be dynamically generated from the user's connected accounts. -->
+            <!-- Connected Accounts (Starts Blank Until Bank Linked) -->
             <div class="sidebar-section">
                 <div class="sidebar-section-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                     <span class="sidebar-section-title" style="margin-bottom: 0;">Connected Accounts</span>
@@ -35,9 +33,9 @@
                 <div class="accounts-list">
                     @if (Model.ConnectedAccounts.Count == 0)
                     {
-                        <div style="font-size: 12px; color: var(--text-tertiary); padding: 8px; text-align: center; border: 1px dashed var(--border-faint); border-radius: 6px;">
+                        <div style="font-size: 12px; color: rgba(255,255,255,0.5); padding: 12px; text-align: center; border: 1px dashed rgba(255,255,255,0.15); border-radius: 8px;">
                             No bank connected yet.<br />
-                            <a asp-page="/ConnectBank" style="color: var(--color-positive); text-decoration: none; font-weight: 500;">Connect with Plaid</a>
+                            <a asp-page="/ConnectBank" style="color: #34d399; text-decoration: none; font-weight: 500; display: inline-block; margin-top: 4px;">Connect with Plaid &rarr;</a>
                         </div>
                     }
                     else
@@ -61,8 +59,7 @@
                 </div>
             </div>
 
-            <!-- Budget Progress (Rendered immediately, no counters/grow animations) --> 
- 
+            <!-- Monthly Budget -->
             <div class="sidebar-section">
                 <div class="sidebar-section-title">Monthly Budget</div>
                 <div class="budget-widget">
@@ -85,38 +82,23 @@
                 </div>
             </div>
 
-            <!-- Sessions Navigation -->
+            <!-- Sessions Navigation (Dynamic LocalStorage Session Switching) -->
             <div class="sidebar-section">
-                <div class="sidebar-section-header-row">
+                <div class="sidebar-section-header-row" style="display: flex; justify-content: space-between; align-items: center;">
                     <span class="sidebar-section-title">Sessions</span>
                     <button type="button" class="new-chat-btn" id="newSessionBtn" title="Start new session">
                         + New
                     </button>
                 </div>
                 <div class="conv-list" id="conversationList">
-                    <button type="button" class="conv-row active" data-conv-id="1">
-                        <span class="conv-title">October Spending Review</span>
-                        <span class="conv-preview">Groceries, transport, dining totals</span>
-                    </button>
-                    <button type="button" class="conv-row" data-conv-id="2">
-                        <span class="conv-title">Recurring Subscriptions</span>
-                        <span class="conv-preview">Rain 5G, Netflix, Spotify</span>
-                    </button>
+                    <!-- Populated dynamically by assistant.js -->
                 </div>
             </div>
         </div>
-
-        <div class="sidebar-footer">
-            <button type="button" class="sidebar-settings-btn" id="openSettingsBtn" aria-label="Open Settings">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                <span>Settings</span>
-            </button>
-        </div>
     </aside>
 
-    <!-- Main Content Column -->
+    <!-- Main Column -->
     <main class="bank-main">
-        <!-- 56px Frosted Header -->
         <header class="bank-header frosted-surface">
             <div class="header-left">
                 <button type="button" class="mobile-toggle-btn" id="mobileMenuBtn" aria-label="Toggle Navigation">
@@ -126,7 +108,7 @@
                     <div class="bank-title">Money assistant</div>
                     <div class="secure-badge">
                         <span class="dot-secure" aria-hidden="true"></span>
-                        <span>Secure banking assistant</span>
+                        <span>Direct Database Telemetry</span>
                     </div>
                 </div>
             </div>
@@ -135,26 +117,24 @@
                 <a asp-page="/ConnectBank" class="header-link-btn" style="color: #34d399; font-size: 13px; text-decoration: none; padding: 6px 12px; background: rgba(16, 185, 129, 0.15); border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3);">
                     Connect Bank
                 </a>
+                <a asp-page="/ImportCsv" class="header-link-btn" style="color: #60a5fa; font-size: 13px; text-decoration: none; padding: 6px 12px; background: rgba(96, 165, 250, 0.15); border-radius: 6px; border: 1px solid rgba(96, 165, 250, 0.3);">
+                    Import CSV
+                </a>
                 <a asp-page="/Transactions" class="header-link-btn" style="color: rgba(255, 255, 255, 0.85); font-size: 13px; text-decoration: none; padding: 6px 12px; background: rgba(255, 255, 255, 0.08); border-radius: 6px; border: 1px solid rgba(255, 255, 255, 0.15);">
                     Transactions
                 </a>
                 <button type="button" class="header-icon-btn" id="maskBalancesBtn" title="Mask / Reveal Balances" aria-label="Mask or Reveal Balances">
                     <svg id="maskIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
                 </button>
-                <button type="button" class="header-icon-btn" id="headerSettingsBtn" title="Preferences" aria-label="Preferences">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
-                </button>
             </div>
         </header>
 
-        <!-- Centered Scrollable Conversation Viewport (672px max-width) -->
         <div class="conversation-view" id="conversationView">
             <div class="conversation-column">
-                <!-- Welcome Group (Entrance animated, no individual staggering) -->
                 <div class="welcome animate-entrance" id="welcomeSection">
                     <div class="welcome-header">
                         <h1>How can I help with your money?</h1>
-                        <p class="welcome-subtext">Calm, real-time banking telemetry & insights across FNB and Capitec</p>
+                        <p class="welcome-subtext">Real-time banking telemetry & database-driven spending analysis</p>
                     </div>
 
                     <div class="welcome-cards-grid">
@@ -193,22 +173,17 @@
                     </div>
                 </div>
 
-                <!-- Messages Stream -->
-                <div class="message-list" id="messageList">
-                    <!-- Populated dynamically -->
-                </div>
+                <div class="message-list" id="messageList"></div>
 
-                <!-- Three-Dot Loading Indicator (4px circular dots, pulse opacity 0.25 to 1.0 over 1.2s) -->
-                <div class="loading-row animate-entrance" id="loadingRow" style="display: none;" role="status" aria-live="polite">
+                <div class="loading-row animate-entrance" id="loadingRow" style="display: none;" role="status">
                     <div class="typing-dots" aria-hidden="true">
                         <span class="pulse-dot"></span>
                         <span class="pulse-dot"></span>
                         <span class="pulse-dot"></span>
                     </div>
-                    <span class="loading-status-text" id="loadingStatusText">Money assistant is thinking…</span>
+                    <span class="loading-status-text">Analyzing database records…</span>
                 </div>
 
-                <!-- Error Notification -->
                 <div class="error-banner animate-entrance" id="errorBanner" style="display: none;" role="alert">
                     <span id="errorMessage">We couldn't process that request right now.</span>
                     <button type="button" id="retryBtn">Retry</button>
@@ -218,51 +193,16 @@
             </div>
         </div>
 
-        <!-- Bottom-Anchored Frosted Message Composer -->
-        <footer class="composer-glass frosted-surface" aria-label="Message composer">
+        <footer class="composer-glass frosted-surface">
             <div class="composer-inner">
-                <textarea id="composerInput" rows="1" placeholder="Ask about your spending, budget, or transactions" aria-label="Ask about your finances"></textarea>
+                <textarea id="composerInput" rows="1" placeholder="Ask about your spending, budget, or transactions"></textarea>
                 <button type="button" class="send-btn" id="sendBtn" disabled aria-label="Send message">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
                 </button>
             </div>
             <div class="composer-meta">
-                <span>End-to-end encrypted · Read-only telemetry</span>
+                <span>Direct LINQ database telemetry · Read-only access</span>
             </div>
         </footer>
     </main>
-
-    <!-- Frosted Settings Panel Dialog (Entrance animated) -->
-    <div class="settings-backdrop" id="settingsModal" style="display: none;" role="presentation">
-        <div class="settings-panel animate-entrance frosted-surface" role="dialog" aria-modal="true" aria-labelledby="settingsDialogTitle">
-            <div class="settings-header">
-                <div class="settings-title-row">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
-                    <h2 id="settingsDialogTitle">Interface & Motion Settings</h2>
-                </div>
-                <button type="button" class="settings-close-btn" id="closeSettingsBtn" aria-label="Close Settings">✕</button>
-            </div>
-            <div class="settings-body">
-                <div class="settings-field">
-                    <label for="reducedMotionSelect">Reduce Motion Preference</label>
-                    <p class="settings-hint">Disables entrance animations, loading pulse cycles, and smooth scrolling.</p>
-                    <select id="reducedMotionSelect" class="settings-select">
-                        <option value="system">System Default</option>
-                        <option value="on">Reduce motion (On)</option>
-                        <option value="off">Standard motion (Off)</option>
-                    </select>
-                </div>
-                <div class="settings-field">
-                    <label class="toggle-label">
-                        <span>Mask Account Balances</span>
-                        <input type="checkbox" id="maskBalancesCheckbox" />
-                    </label>
-                    <p class="settings-hint">Obfuscates financial balances across sidebar and overview.</p>
-                </div>
-            </div>
-            <div class="settings-footer">
-                <button type="button" class="settings-done-btn" id="saveSettingsBtn">Done</button>
-            </div>
-        </div>
-    </div>
 </div>
