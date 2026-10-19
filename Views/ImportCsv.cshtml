@@ -1,0 +1,50 @@
+﻿@page
+@model MoneyBot.Views.ImportCsvModel
+@{
+    ViewData["Title"] = "Import Bank CSV Statement";
+}
+
+<div class="bank-shell" style="max-width: 680px; margin: 40px auto; padding: 24px;">
+    <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 16px; padding: 32px; backdrop-filter: blur(12px);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h1 style="font-size: 24px; font-weight: 600; color: #fff; margin: 0;">Manual CSV Import</h1>
+            <a asp-page="/Transactions" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 13px;">&larr; Back to Transactions</a>
+        </div>
+        <p style="color: rgba(255, 255, 255, 0.7); line-height: 1.5; font-size: 14px; margin-bottom: 24px;">
+            Upload an exported bank statement in CSV format (FNB or Capitec). Transactions will be categorized and analyzed by the assistant.
+        </p>
+
+        @if (!string.IsNullOrEmpty(Model.SuccessMessage))
+        {
+            <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); color: #34d399; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                @Model.SuccessMessage
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.ErrorMessage))
+        {
+            <div style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #fca5a5; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px;">
+                @Model.ErrorMessage
+            </div>
+        }
+
+        <form method="post" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 18px;">
+            <div>
+                <label style="display: block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px;">Select Institution</label>
+                <select asp-for="BankName" style="width: 100%; padding: 10px 14px; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15); border-radius: 8px; color: #fff; outline: none;">
+                    <option value="FNB" style="background: #181c24;">FNB</option>
+                    <option value="Capitec" style="background: #181c24;">Capitec</option>
+                </select>
+            </div>
+
+            <div>
+                <label style="display: block; font-size: 13px; color: rgba(255,255,255,0.8); margin-bottom: 6px;">CSV File</label>
+                <input asp-for="CsvFile" type="file" accept=".csv" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.03); border: 1px dashed rgba(255,255,255,0.2); border-radius: 8px; color: #ccc;" />
+            </div>
+
+            <button type="submit" class="action-btn" style="padding: 12px; background: #10b981; color: #fff; border: none; border-radius: 8px; font-weight: 500; font-size: 15px; cursor: pointer; margin-top: 8px;">
+                Upload & Process Statement
+            </button>
+        </form>
+    </div>
+</div>
