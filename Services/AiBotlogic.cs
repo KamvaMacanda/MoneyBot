@@ -1,6 +1,8 @@
 ﻿namespace MoneyBot.Services
 {
-    public class Encryption
+    public class AiBotlogic
     {
+
+
     }
 }

@@ -2,14 +2,24 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
-using MoneyBot.Data;
+using MoneyBot.Data; 
+using MoneyBot.Services; 
 
 namespace MoneyBot.Services
 {
+
+    /// <summary>
+    /// queries PostgreSQL via LINQ for financial facts,
+    /// and uses Gemini AI for conversational, advisory answers.
+    /// </summary>
     public class ChatBotLogic
     {
         private readonly AppDbContext db;
+        private readonly GeminiService _gemini;
+        private readonly ILogger<ChatBotLogic> _logger;
 
+        Cryptography cryptography = new Cryptography();
+       
 
         // Expanded list of categories to support richer queries
         private static readonly string[] KnownCategories =
@@ -27,9 +37,11 @@ namespace MoneyBot.Services
             "education"
         };
 
-        public ChatBotLogic(AppDbContext db)
+        public ChatBotLogic(AppDbContext db, GeminiService gemini, ILogger<ChatBotLogic> logger)
         {
             this.db = db;
+            _gemini = gemini;
+            _logger = logger;
         }
 
 
@@ -46,7 +58,7 @@ namespace MoneyBot.Services
                     return "Please enter a valid message or question.";
 
                 // Support encrypted incoming message if flagged or formatted as , else raw text
-                string decryptedMessage = DecryptMessageIfEncrypted(message);
+                string decryptedMessage = cryptography.DecryptMessageIfEncrypted(message);
                 var text = decryptedMessage.ToLower().Trim();
 
                 var (start, end) = GetThisMonthRange();
@@ -124,55 +136,7 @@ namespace MoneyBot.Services
 
      
 
-        // AES-GCM / SHA-256 reversible or envelope encryption for user telemetry messages
-        /// <summary>
-        /// hode this
-        /// </summary>
-        private static readonly byte[] AesKey = SHA256.HashData(Encoding.UTF8.GetBytes("MoneyBotSecureMessageEncryptionKey2026!"));
-
-        public static string EncryptMessage(string plainText)
-        {
-            if (string.IsNullOrEmpty(plainText)) return "";
-            using var aes = Aes.Create();
-            aes.Key = AesKey;
-            aes.GenerateIV();
-
-            using var encryptor = aes.CreateEncryptor(aes.Key, aes.IV);
-            var plainBytes = Encoding.UTF8.GetBytes(plainText);
-            var cipherBytes = encryptor.TransformFinalBlock(plainBytes, 0, plainBytes.Length);
-
-            var combined = new byte[aes.IV.Length + cipherBytes.Length];
-            Buffer.BlockCopy(aes.IV, 0, combined, 0, aes.IV.Length);
-            Buffer.BlockCopy(cipherBytes, 0, combined, aes.IV.Length, cipherBytes.Length);
-
-            return "ENC:" + Convert.ToBase64String(combined);
-        }
-
-        public static string DecryptMessageIfEncrypted(string message)
-        {
-            if (string.IsNullOrWhiteSpace(message) || !message.StartsWith("ENC:"))
-                return message;
-
-            try
-            {
-                var payload = Convert.FromBase64String(message[4..]);
-                using var aes = Aes.Create();
-                aes.Key = AesKey;
-
-                var iv = new byte[aes.BlockSize / 8];
-                var cipherBytes = new byte[payload.Length - iv.Length];
-                Buffer.BlockCopy(payload, 0, iv, 0, iv.Length);
-                Buffer.BlockCopy(payload, iv.Length, cipherBytes, 0, cipherBytes.Length);
-
-                using var decryptor = aes.CreateDecryptor(aes.Key, iv);
-                var decrypted = decryptor.TransformFinalBlock(cipherBytes, 0, cipherBytes.Length);
-                return Encoding.UTF8.GetString(decrypted);
-            }
-            catch
-            {
-                return message;
-            }
-        }
+    
 
 
 
@@ -194,7 +158,7 @@ namespace MoneyBot.Services
             return (lastMonthStart, lastMonthEnd);
         }
 
-        /// <summary>"Where did my money go" / spending broken down by category.</summary>
+        /// "Where did my money go" / spending broken down by category
         private async Task<string> HandleSpendingByCategoryAsync(string userId, DateOnly start, DateOnly end)
         {
             var results = await db.Transactions
@@ -447,5 +411,18 @@ namespace MoneyBot.Services
 
             return reply;
         }
+
+
+        /// <summary>
+        /// Entry point: gathers financial ledger context via LINQ, checks Gemini AI, and falls back to deterministic LINQ answers.
+        /// </summary>
+
+
+
+
+
+
+
+
     }
 }
