@@ -6,12 +6,14 @@ namespace MoneyBot.Services
     public class Cryptography
     {
 
-        // AES-GCM / SHA-256 reversible or envelope encryption for user telemetry messages
-        /// <summary>
-        /// hode this
-        /// </summary>
-        private static readonly byte[] AesKey = SHA256.HashData(Encoding.UTF8.GetBytes("MoneyBotSecureMessageEncryptionKey2026!"));
+   
+     // Eneyption key is  in .env  
+        private static readonly byte[] AesKey = SHA256.HashData(Encoding.UTF8.GetBytes("APP_AES_KEY"));
 
+
+        
+        /// Encrypts plain text into an AES-CBC Base64 string prefixed with "ENC:".
+       
         public static string EncryptMessage(string plainText)
         {
             if (string.IsNullOrEmpty(plainText)) return "";
@@ -30,6 +32,11 @@ namespace MoneyBot.Services
             return "ENC:" + Convert.ToBase64String(combined);
         }
 
+
+
+   
+        /// Decrypts a message if it starts with "ENC:", otherwise returns original text.
+     
         public static string DecryptMessageIfEncrypted(string message)
         {
             if (string.IsNullOrWhiteSpace(message) || !message.StartsWith("ENC:"))
