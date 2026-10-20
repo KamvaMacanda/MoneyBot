@@ -8,18 +8,12 @@ using MoneyBot.Services;
 namespace MoneyBot.Services
 {
 
-    /// <summary>
-    /// queries PostgreSQL via LINQ for financial facts,
-    /// and uses Gemini AI for conversational, advisory answers.
-    /// </summary>
+ 
     public class ChatBotLogic
     {
         private readonly AppDbContext db;
-        private readonly GeminiService _gemini;
-        private readonly ILogger<ChatBotLogic> _logger;
-
         Cryptography cryptography = new Cryptography();
-       
+
 
         // Expanded list of categories to support richer queries
         private static readonly string[] KnownCategories =
@@ -37,11 +31,10 @@ namespace MoneyBot.Services
             "education"
         };
 
-        public ChatBotLogic(AppDbContext db, GeminiService gemini, ILogger<ChatBotLogic> logger)
+        public ChatBotLogic(AppDbContext db)
         {
             this.db = db;
-            _gemini = gemini;
-            _logger = logger;
+           
         }
 
 
