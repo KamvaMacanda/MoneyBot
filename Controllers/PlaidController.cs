@@ -15,7 +15,7 @@ namespace MoneyBot.Controllers
 
         private readonly PlaidService plaidService; 
         private readonly ILogger<PlaidController> logger;
-
+        public record ExchangeRequest(string PublicToken);
         public PlaidController(PlaidService plaidService, ILogger<PlaidController> logger)
         {
             this.plaidService = plaidService;
@@ -60,7 +60,7 @@ namespace MoneyBot.Controllers
         private string GetUserId() => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
     }
 
-    public record ExchangeRequest(string PublicToken);
+
 
 
 

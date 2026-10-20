@@ -16,6 +16,8 @@ namespace MoneyBot.Controllers
 
         private readonly ChatBotLogic Chatlogic;
 
+        public record ChatRequest(string Message);
+
         public ChatController(ChatBotLogic logic)
         {
             Chatlogic = logic;
@@ -34,7 +36,7 @@ namespace MoneyBot.Controllers
             return User.FindFirstValue(ClaimTypes.NameIdentifier)!;
         }
 
-        public record ChatRequest(string Message);
+
 
 
 
