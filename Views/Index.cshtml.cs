@@ -15,7 +15,8 @@ namespace MoneyBot.Views
         private readonly PlaidService _plaidService;
         private readonly AppDbContext _db;
         private readonly ILogger<IndexModel> _logger;
-
+        public record ChatMessageRequest(string Message,  
+            string? ConversationId);
         public IndexModel(
             ChatBotLogic chatLogic, 
             PlaidService plaidService, 
@@ -146,6 +147,6 @@ namespace MoneyBot.Views
             return User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "default-user";
         }
 
-        public record ChatMessageRequest(string Message, string? ConversationId);
+    
     }
 }

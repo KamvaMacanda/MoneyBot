@@ -133,7 +133,8 @@ namespace MoneyBot.Services
             var results = new List<AccountDetail>();
 
             // Retrieve all connected bank items for this user from PostgreSQL
-            var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
+            var items = await _db.Items.Where(i => i.UserId == userId)
+                    .ToListAsync();
 
             foreach (var item in items)
             {
