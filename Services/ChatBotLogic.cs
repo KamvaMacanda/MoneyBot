@@ -10,6 +10,7 @@ namespace MoneyBot.Services
     {
         private readonly AppDbContext db;
 
+
         // Expanded list of categories to support richer queries
         private static readonly string[] KnownCategories =
         { 
@@ -30,6 +31,8 @@ namespace MoneyBot.Services
         {
             this.db = db;
         }
+
+
 
         /// <summary>
         /// Entry point for Razor Pages / Assistant. Checks the message against known
