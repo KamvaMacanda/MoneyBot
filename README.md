@@ -9,5 +9,9 @@ All records are stored in PostgreSQL.
 ## Bot Logic 
 
 When a user asks a question in the chat interface, the application executes LINQ queries against the database to calculate real-time spending totals, category breakdowns, and savings insights.
-Theses are then sent to the Gemini AI API with local LINQ fallbacks to deliver personalized, conversational banking  advise .
+Theses are then sent to the Gemini AI API with local LINQ fallbacks to deliver personalized, conversational banking  advise . 
+
+1. ChatBotLogic:  offline, using  keyword-recognition  for financial insights and telemetry  using direct LINQ queries.
+   
+3. AiBotLogic: Handles AI conversation via GeminiService using the free  Gemini Api . It retrieves the data form   AppDbContext and queries Gemini. If the user toggles Offline Mode OR if Gemini credits  run out, it  fallsback  to ChatBotLogic.
 
