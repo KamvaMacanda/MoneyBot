@@ -8,41 +8,23 @@ using MoneyBot.Services;
 namespace MoneyBot.Services
 {
 
- 
+
     public class ChatBotLogic
     {
         private readonly AppDbContext db;
-        Cryptography cryptography = new Cryptography();
 
-
-        // Expanded list of categories to support richer queries
         private static readonly string[] KnownCategories =
-        { 
-            "groceries", 
-            "transport", 
-            "dining",  
-            "shopping",
-            "entertainment", 
-            "subscriptions",
-            "utilities",
-            "health",
-            "medical",
-            "travel",
-            "education"
+        {
+            "groceries", "transport", "dining", "shopping",
+            "entertainment", "subscriptions", "utilities", "health",
+            "medical", "travel", "education"
         };
 
         public ChatBotLogic(AppDbContext db)
         {
             this.db = db;
-           
         }
 
-
-
-        /// <summary>
-        /// Entry point for Razor Pages / Assistant. Checks the message against known
-        /// keyword patterns, most specific first, and handles errors and decrypted/encrypted payload transparently.
-        /// </summary>
         public async Task<string> AskAsync(string userId, string message)
         {
             try
@@ -50,10 +32,9 @@ namespace MoneyBot.Services
                 if (string.IsNullOrWhiteSpace(message))
                     return "Please enter a valid message or question.";
 
-                // Support encrypted incoming message if flagged or formatted as , else raw text
-                string decryptedMessage = cryptography.DecryptMessageIfEncrypted(message);
+                //  Call static method on Cryptography type directly, not an instance
+                string decryptedMessage = Cryptography.DecryptMessageIfEncrypted(message);
                 var text = decryptedMessage.ToLower().Trim();
-
                 var (start, end) = GetThisMonthRange();
                 var hasNumber = Regex.IsMatch(text, @"\d+");
 
@@ -109,7 +90,7 @@ namespace MoneyBot.Services
                 if (ContainsAny(text, "count", "how many", "total transactions"))
                     return await HandleTransactionCountAsync(userId, start, end);
 
-                // 13. Friendly help response
+                // 13.  response
                 return "I can help with:\n" +
                        "• Where your money went (category breakdown)\n" +
                        "• Specific category spend (e.g. groceries, dining, transport, subscriptions)\n" +
@@ -128,10 +109,6 @@ namespace MoneyBot.Services
         }
 
      
-
-    
-
-
 
         private static bool ContainsAny(string text, params string[] keywords) =>
             keywords.Any(text.Contains);
