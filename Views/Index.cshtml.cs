@@ -18,12 +18,12 @@ namespace MoneyBot.Views
         public record ChatMessageRequest(string Message,  
             string? ConversationId);
         public IndexModel(
-            ChatBotLogic chatLogic, 
+            AiBotLogic aiBotLogic,
             PlaidService plaidService, 
             AppDbContext db, 
             ILogger<IndexModel> logger)
         {
-            _chatLogic = chatLogic;
+            _aiBotLogic = aiBotLogic;
             _plaidService = plaidService;
             _db = db;
             _logger = logger;
@@ -122,23 +122,23 @@ namespace MoneyBot.Views
             }
         }
 
-        public async Task<IActionResult> OnPostAskAsync([FromBody] ChatMessageRequest request)
+        public async Task<IActionResult> OnPostAskAsync([FromBody] ChatQueryDto request)
         {
             if (request == null || string.IsNullOrWhiteSpace(request.Message))
             {
                 return new JsonResult(new { error = "Message cannot be empty." }) { StatusCode = 400 };
             }
-
             try
             {
                 var userId = GetUserId();
-                var reply = await _chatLogic.AskAsync(userId, request.Message);
+                // Calls AiBotLogic which uses Gemini AI, or switches to ChatBotLogic if offline/quota reached
+                var reply = await _aiBotLogic.AskAsync(userId, request.Message, request.IsOfflineMode);
                 return new JsonResult(new { reply });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error processing chat message in IndexModel.OnPostAsk");
-                return new JsonResult(new { error = "Failed to process chat query." }) { StatusCode = 500 };
+                _logger.LogError(ex, "Error processing chat query");
+                return new JsonResult(new { error = "Internal server error." }) { StatusCode = 500 };
             }
         }
 
