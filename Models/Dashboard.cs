@@ -2,6 +2,9 @@
 {
     public class Dashboard
     {
+        /// <summary>
+        /// Encapsulates live financial metrics, balances, and connected accounts.
+        /// </summary>
         public decimal TotalBalance { get; set; } = 0m;
         public decimal RandBalance { get; set; } = 0m;
         public decimal MonthlyOutflow { get; set; }
