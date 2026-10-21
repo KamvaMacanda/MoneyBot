@@ -15,3 +15,7 @@ Theses are then sent to the Gemini AI API with local LINQ fallbacks to deliver p
    
 3. AiBotLogic: Handles AI conversation via GeminiService using the free  Gemini Api . It retrieves the data form   AppDbContext and queries Gemini. If the user toggles Offline Mode OR if Gemini credits  run out, it  fallsback  to ChatBotLogic.
 
+   ## Tech stack
+   Supabase - hosts your PostgreSQL database in the cloud
+   C# 
+
