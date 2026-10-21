@@ -8,6 +8,8 @@
         public string Message { get; set; } = string.Empty;
         public string? ConversationId { get; set; }
 
+        public bool IsOfflineMode { get; set; }
 
-}
+
+    }
 }
