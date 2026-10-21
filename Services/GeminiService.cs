@@ -22,8 +22,10 @@ namespace MoneyBot.Services
             _http = http;
        
             // Reads from environment variable GEMINI_API_KEY, fallback to appsettings
+
             _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
                       ?? config["Gemini:ApiKey"];
+
             _logger = logger;
         }
 
@@ -62,7 +64,7 @@ namespace MoneyBot.Services
                 var content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
                 var response = await _http.PostAsync(endpoint, content);
 
-                // Detect quota / credit limit reached (HTTP 429 Too Many Requests or 403 Forbidden)
+                //  credit limit reached (HTTP 429 Too Many Requests or 403 Forbidden)
                 if ((int)response.StatusCode == 429 || (int)response.StatusCode == 403)
                 {
                     _logger.LogWarning("Gemini API quota exceeded or credits depleted. Flagging IsQuotaExceeded = true.");
