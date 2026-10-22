@@ -1,6 +1,7 @@
 # Telemetry Money Chat Bot 
 
 ## System analysis and design  
+Telemetry bank chat bot using keyword recognition
 MoneyBot is a server-driven ASP.NET Core web app  financial assistant that imports  transaction data using Plaid Link or through manual CSV statement uploads. 
 Authentication is created using plaid sandbox to connect to bank accounts 
 
