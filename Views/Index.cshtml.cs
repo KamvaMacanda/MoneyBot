@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.EntityFrameworkCore;
 using MoneyBot.Data;
+using MoneyBot.DTOs;
 using MoneyBot.Models;
 using MoneyBot.Services;
 using System.Security.Claims;
@@ -11,7 +12,7 @@ namespace MoneyBot.Views
     [IgnoreAntiforgeryToken(Order = 1001)]
     public class IndexModel : PageModel
     {
-        private readonly ChatBotLogic _chatLogic;
+        private readonly AiBotLogic _aiBotLogic;
         private readonly PlaidService _plaidService;
         private readonly AppDbContext _db;
         private readonly ILogger<IndexModel> _logger;
