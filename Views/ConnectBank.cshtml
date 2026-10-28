@@ -23,8 +23,9 @@
         }
 
         <div style="display: flex; flex-direction: column; gap: 16px; align-items: flex-start;">
-            <button id="linkButton" type="button" class="send-btn" style="padding: 12px 28px; width: auto; height: auto; border-radius: 10px; font-weight: 500; font-size: 15px; cursor: pointer; background: #10b981; color: #000;" @(string.IsNullOrEmpty(Model.LinkToken) ? "disabled" : "")>
-                Connect bank with Plaid
+            <button id="linkButton" type="button" class="send-btn" style="padding: 12px 28px; width: auto; height: auto; border-radius: 10px; font-weight: 500; font-size: 15px; cursor: pointer; background: #10b981; color: #000; display: inline-flex; align-items: center; gap: 8px;" @(string.IsNullOrEmpty(Model.LinkToken) ? "disabled" : "")>
+                <span id="buttonSpinner" style="display: none; width: 14px; height: 14px; border: 2px solid rgba(0,0,0,0.25); border-top-color: #000; border-radius: 50%; animation: spin 0.8s linear infinite;"></span>
+                <span id="buttonText">Connect bank with Plaid</span>
             </button>
 
             <a asp-page="/Index" style="color: rgba(255, 255, 255, 0.5); font-size: 14px; text-decoration: none; margin-top: 8px;">
@@ -40,12 +41,21 @@
     </div>
 </div>
 
+<style>
+    @@keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
 @section Scripts {
     <script src="https://cdn.plaid.com/link/v2/stable/link-initialize.js"></script>
     <script>
         (function () {
             const linkToken = "@Model.LinkToken";
             const linkButton = document.getElementById("linkButton");
+            const buttonSpinner = document.getElementById("buttonSpinner");
+            const buttonText = document.getElementById("buttonText");
             const exchangeForm = document.getElementById("exchangeForm");
             const publicTokenInput = document.getElementById("publicTokenInput");
             const institutionNameInput = document.getElementById("institutionNameInput");
@@ -58,6 +68,10 @@
             const handler = Plaid.create({
                 token: linkToken,
                 onSuccess: function (public_token, metadata) {
+                    if (buttonSpinner) buttonSpinner.style.display = "inline-block";
+                    if (buttonText) buttonText.textContent = "Connecting...";
+                    linkButton.setAttribute("disabled", "true");
+
                     publicTokenInput.value = public_token;
                     if (metadata && metadata.institution && metadata.institution.name) {
                         institutionNameInput.value = metadata.institution.name;
@@ -65,6 +79,10 @@
                     exchangeForm.submit();
                 },
                 onExit: function (err, metadata) {
+                    if (buttonSpinner) buttonSpinner.style.display = "none";
+                    if (buttonText) buttonText.textContent = "Connect bank with Plaid";
+                    linkButton.removeAttribute("disabled");
+
                     if (err != null) {
                         console.error("Plaid link exited with error:", err);
                     }
@@ -72,6 +90,8 @@
             });
 
             linkButton.addEventListener("click", function () {
+                if (buttonSpinner) buttonSpinner.style.display = "inline-block";
+                if (buttonText) buttonText.textContent = "Launching Plaid...";
                 handler.open();
             });
         })();

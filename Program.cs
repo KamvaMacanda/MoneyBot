@@ -5,13 +5,13 @@ using MoneyBot.Data;
 using MoneyBot.Models;
 using MoneyBot.Services;
 using MoneyBot.Services.CSV;
-using Supabase.Extensions.DependencyInjection;
 using PlaidEnv = Going.Plaid.Environment;
 
 DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure PostgreSQL Database Context
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection")
@@ -38,7 +38,6 @@ builder.Services.AddAuthorization();
 builder.Services.AddScoped<ChatBotLogic>();
 builder.Services.AddScoped<ImportCSV>();
 builder.Services.AddHttpClient<GeminiService>();
-builder.Services.AddScoped<ChatBotLogic>();
 builder.Services.AddScoped<AiBotLogic>();
 builder.Services.AddSingleton<IBankCSVMapper, FnbCsvMapper>();
 builder.Services.AddSingleton<IBankCSVMapper, CapitecCsvMapper>();
@@ -57,26 +56,18 @@ var targetPlaidEnv = plaidEnvStr switch
 builder.Services.Configure<PlaidOptions>(options =>
 {
     options.Environment = targetPlaidEnv;
-    options.ClientId = System.Environment.GetEnvironmentVariable("PLAID_CLIENT_ID")
+    options.ClientId = (System.Environment.GetEnvironmentVariable("PLAID_CLIENT_ID")
         ?? builder.Configuration["Plaid:ClientId"]
-        ?? string.Empty;
-    options.Secret = System.Environment.GetEnvironmentVariable("PLAID_SECRET")
+        ?? string.Empty).Trim();
+    options.Secret = (System.Environment.GetEnvironmentVariable("PLAID_SECRET")
         ?? builder.Configuration["Plaid:Secret"]
-        ?? string.Empty;
+        ?? string.Empty).Trim();
 });
 
 // PlaidClient consumes IOptions<PlaidOptions> directly
 builder.Services.AddSingleton<PlaidClient>();
 
 builder.Services.AddScoped<PlaidService>();
-
-// Safely register Supabase Client if URL and Key are provided
-var supabaseUrl = builder.Configuration["Supabase:Url"];
-var supabaseKey = builder.Configuration["Supabase:Key"];
-if (!string.IsNullOrWhiteSpace(supabaseUrl) && !string.IsNullOrWhiteSpace(supabaseKey))
-{
-    builder.Services.AddSupabase(supabaseUrl, supabaseKey);
-}
 
 var app = builder.Build();
 
