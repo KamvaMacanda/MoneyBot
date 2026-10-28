@@ -133,8 +133,7 @@ namespace MoneyBot.Services
             var results = new List<AccountDetail>();
 
             // Retrieve all connected bank items for this user from PostgreSQL
-            var items = await _db.Items.Where(i => i.UserId == userId)
-                    .ToListAsync();
+            var items = await _db.Items.Where(i => i.UserId == userId).ToListAsync();
 
             foreach (var item in items)
             {
@@ -157,23 +156,14 @@ namespace MoneyBot.Services
                     // Process each live account returned by Plaid
                     foreach (var acc in balanceResponse.Accounts)
                     {
-                        // Extract current or available balance directly from Plaid telemetry
                         var rawBalance = acc.Balances.Current ?? acc.Balances.Available ?? 0m;
                         var isCredit = acc.Type == AccountType.Credit;
                         var currency = acc.Balances.IsoCurrencyCode ?? "USD";
 
-                        // Currency conversion: convert USD to South African Rand (ZAR)
-                        decimal balanceInZar;
-                        if (string.Equals(currency, "USD", StringComparison.OrdinalIgnoreCase))
-                        {
-                            balanceInZar = rawBalance * usdToZarExchangeRate;
-                        }
-                        else
-                        {
-                            balanceInZar = rawBalance;
-                        }
+                        decimal balanceInZar = string.Equals(currency, "USD", StringComparison.OrdinalIgnoreCase)
+                            ? rawBalance * usdToZarExchangeRate
+                            : rawBalance;
 
-                        // For credit cards, balance represents an outflow/debt
                         if (isCredit)
                         {
                             balanceInZar = -Math.Abs(balanceInZar);
@@ -231,28 +221,52 @@ namespace MoneyBot.Services
                             break;
                         }
 
-                        foreach (var t in response.Added.Concat(response.Modified))
-                            UpsertTransaction(userId, t);
+                        var incomingTxns = response.Added.Concat(response.Modified).ToList();
+                        var incomingIds = incomingTxns
+                            .Where(t => !string.IsNullOrEmpty(t.TransactionId))
+                            .Select(t => t.TransactionId!)
+                            .Distinct()
+                            .ToList();
 
-                        foreach (var removed in response.Removed)
+                        // Batch query existing records in 1 trip instead of N individual queries
+                        var existingMap = new Dictionary<string, AppTransaction>();
+                        if (incomingIds.Count > 0)
                         {
-                            var existing = await _db.Transactions.FindAsync(removed.TransactionId);
-                            if (existing != null)
-                                _db.Transactions.Remove(existing);
+                            var existingRows = await _db.Transactions
+                                .Where(t => incomingIds.Contains(t.TransactionId))
+                                .ToListAsync();
+                            existingMap = existingRows.ToDictionary(t => t.TransactionId);
+                        }
+
+                        foreach (var t in incomingTxns)
+                        {
+                            if (string.IsNullOrEmpty(t.TransactionId)) continue;
+                            existingMap.TryGetValue(t.TransactionId, out var existingRow);
+                            UpsertTransactionBatched(userId, t, existingRow);
+                        }
+
+                        var removedIds = response.Removed
+                            .Where(r => !string.IsNullOrEmpty(r.TransactionId))
+                            .Select(r => r.TransactionId!)
+                            .ToList();
+
+                        if (removedIds.Count > 0)
+                        {
+                            var toRemove = await _db.Transactions
+                                .Where(t => removedIds.Contains(t.TransactionId))
+                                .ToListAsync();
+                            _db.Transactions.RemoveRange(toRemove);
                         }
 
                         cursor = response.NextCursor;
                         hasMore = response.HasMore;
                     }
 
-                    // Only advance the cursor if the whole sync succeeded, so a failed
-                    // run is retried from the last good point next time.
                     if (!failed)
                         item.Cursor = cursor;
                 }
                 catch (Exception ex) when (ex is HttpRequestException or System.Security.Cryptography.CryptographicException)
                 {
-                    // One bank failing to sync shouldn't stop the others, just log and continue.
                     _logger.LogError(ex, "Sync failed for item {ItemId}, user {UserId}", item.Id, userId);
                 }
             }
@@ -260,19 +274,15 @@ namespace MoneyBot.Services
             await _db.SaveChangesAsync();
         }
 
-        private void UpsertTransaction(string userId, PlaidTransaction t)
+        private void UpsertTransactionBatched(string userId, PlaidTransaction t, AppTransaction? existing)
         {
-            var existing = _db.Transactions.Find(t.TransactionId!);
             var row = existing ?? new AppTransaction { TransactionId = t.TransactionId! };
 
             row.UserID = userId;
             row.Date = t.Date ?? DateOnly.FromDateTime(DateTime.UtcNow);
             row.Amount = t.Amount ?? 0m;
 
-            // MerchantName is the cleaned name (may be null); OriginalDescription is the raw bank text.
-            // Name is obsolete, so it's no longer used.
             row.Merchant = t.MerchantName ?? t.OriginalDescription ?? "Unknown";
-
             row.Pending = t.Pending ?? false;
             row.Source = "plaid";
 
@@ -283,7 +293,9 @@ namespace MoneyBot.Services
             }
 
             if (existing == null)
+            {
                 _db.Transactions.Add(row);
+            }
         }
     }
 }

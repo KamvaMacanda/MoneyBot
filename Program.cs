@@ -18,6 +18,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         ?? System.Environment.GetEnvironmentVariable("DB_CONNECTION_STRING"),
         npgsqlOptions =>
         {
+            npgsqlOptions.CommandTimeout(60);
             npgsqlOptions.EnableRetryOnFailure(
                 maxRetryCount: 5,
                 maxRetryDelay: TimeSpan.FromSeconds(10),
