@@ -1,4 +1,4 @@
-# Telemetry Money Chat Bot 
+#  Money Chat Bot (in progress )
 
 ## System analysis and design  
 Telemetry bank chat bot using keyword recognition
