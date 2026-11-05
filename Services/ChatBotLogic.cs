@@ -42,6 +42,11 @@ namespace MoneyBot.Services
             var startOfLastMonth = startOfMonth.AddMonths(-1);
             var endOfLastMonth = startOfMonth.AddDays(-1);
 
+            // Greetings handler
+            if (cleanText == "hello" || cleanText == "hi" || cleanText == "hey" || cleanText.StartsWith("hello ") || cleanText.StartsWith("hi "))
+            {
+                return "Hello! I'm MoneyBot, your financial assistant. How can I assist you with your spending, transactions, or budget today?";
+            }
 
             // Fetch user transactions for this month (Plaid records)
             var currentTxns = await db.Transactions
