@@ -42,7 +42,7 @@ namespace MoneyBot.Services
 
             try
             {
-                var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={_apiKey}";
+                var endpoint = $"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={_apiKey}";
                 var systemPrompt = "You are MoneyBot, a friendly and accurate personal financial assistant. " +
                                    "Answer the user's questions clearly based on their South African Rand (ZAR) spending and bank data provided below.\n\n" +
                                    $"Financial Context:\n{financialContext}";

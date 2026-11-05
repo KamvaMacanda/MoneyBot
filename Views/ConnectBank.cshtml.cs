@@ -48,13 +48,13 @@ namespace MoneyBot.Views
             {
                 var userId = GetUserId();
                 await _plaidService.ExchangePublicTokenAsync(userId, publicToken, institutionName);
+                await _plaidService.SyncTransactionsAsync(userId); 
                 return RedirectToPage("/Index");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error exchanging public token for user.");
-                var rootEx = ex.GetBaseException();
-                ErrorMessage = $"Failed to connect bank: {rootEx.Message}";
+                ErrorMessage = $"Failed to connect bank: {ex.GetBaseException().Message}";
                 return Page();
             }
         }
