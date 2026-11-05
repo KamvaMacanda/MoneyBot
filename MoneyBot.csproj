@@ -24,8 +24,6 @@
     </PackageReference>
     <PackageReference Include="Microsoft.OpenApi" Version="2.12.0" />
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.3" />
-    <!-- Added CsvHelper to resolve missing CsvHelper types -->
-    <PackageReference Include="CsvHelper" Version="30.0.1" />
   </ItemGroup>
 
 </Project>

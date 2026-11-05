@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using MoneyBot.Data;
 using MoneyBot.Models;
-using MoneyBot.Services.CSV;
 using AppTransaction = MoneyBot.Models.Transaction;
 using PlaidTransaction = Going.Plaid.Entity.Transaction;
 

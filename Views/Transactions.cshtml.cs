@@ -23,7 +23,7 @@ namespace MoneyBot.Views
         public decimal TotalSpent { get; set; }
         public decimal TotalIncome { get; set; }
         public int PlaidCount { get; set; }
-        public int CsvCount { get; set; }
+ 
 
         [BindProperty(SupportsGet = true)]
         public string? SourceFilter { get; set; }
@@ -63,6 +63,7 @@ namespace MoneyBot.Views
                 {
                     var term = SearchTerm.ToLower();
                     query = query.Where(t => (t.Merchant != null && t.Merchant.ToLower().Contains(term)) ||
+
                                              (t.Category != null && t.Category.ToLower().Contains(term)));
                 }
 
@@ -71,7 +72,7 @@ namespace MoneyBot.Views
                 TotalSpent = Transactions.Where(t => t.Amount > 0).Sum(t => t.Amount);
                 TotalIncome = Transactions.Where(t => t.Amount < 0).Sum(t => -t.Amount);
                 PlaidCount = Transactions.Count(t => t.Source.Equals("plaid", StringComparison.OrdinalIgnoreCase));
-                CsvCount = Transactions.Count(t => t.Source.Equals("csv", StringComparison.OrdinalIgnoreCase));
+                
             }
             catch (Exception ex)
             {

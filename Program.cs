@@ -4,7 +4,6 @@ using Microsoft.Extensions.Options;
 using MoneyBot.Data;
 using MoneyBot.Models;
 using MoneyBot.Services;
-using MoneyBot.Services.CSV;
 using PlaidEnv = Going.Plaid.Environment;
 
 DotNetEnv.Env.Load();
@@ -37,11 +36,8 @@ builder.Services.AddControllers();
 builder.Services.AddAuthorization();
 
 builder.Services.AddScoped<ChatBotLogic>();
-builder.Services.AddScoped<ImportCSV>();
 builder.Services.AddHttpClient<GeminiService>();
 builder.Services.AddScoped<AiBotLogic>();
-builder.Services.AddSingleton<IBankCSVMapper, FnbCsvMapper>();
-builder.Services.AddSingleton<IBankCSVMapper, CapitecCsvMapper>();
 
 // Configure PlaidOptions with Environment, ClientId, and Secret
 var plaidEnvStr = (System.Environment.GetEnvironmentVariable("PLAID_ENV")

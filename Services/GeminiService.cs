@@ -1,4 +1,4 @@
-﻿using System.Text;
+using System.Text;
 using System.Text.Json;
 
 namespace MoneyBot.Services
@@ -23,7 +23,7 @@ namespace MoneyBot.Services
        
             // Reads from environment variable GEMINI_API_KEY, fallback to appsettings
 
-            _apiKey = Environment.GetEnvironmentVariable("GEMINI_API_KEY")
+            _apiKey = (Environment.GetEnvironmentVariable("GEMINI_API_KEY") ?? Environment.GetEnvironmentVariable("GeminiAPIKey"))
                       ?? config["Gemini:ApiKey"];
 
             _logger = logger;

@@ -43,13 +43,13 @@ namespace MoneyBot.Services
             var endOfLastMonth = startOfMonth.AddDays(-1);
 
 
-            // Fetch user transactions for this month (both Plaid and CSV)
+            // Fetch user transactions for this month (Plaid records)
             var currentTxns = await db.Transactions
                 .Where(t => t.UserID == userId && t.Date >= startOfMonth && t.Date <= today)
                 .ToListAsync();
             if (!currentTxns.Any())
             {
-                return "No transactions found for this month yet. Please connect a bank via Plaid or upload a CSV statement.";
+                return "No transactions found for this month yet. Please connect a bank via Plaid.";
             } 
 
             // 1. Where did money go / Spending overview / Outflow / Categories

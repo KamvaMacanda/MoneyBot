@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using MoneyBot.Data;
 
 namespace MoneyBot.Services
@@ -41,7 +41,7 @@ namespace MoneyBot.Services
 
             try
             {
-                // Gather all financial context via LINQ (both Plaid and CSV records)
+                // Gather all financial context via LINQ (Plaid records)
                 var today = DateOnly.FromDateTime(DateTime.UtcNow);
                 var startOfMonth = new DateOnly(today.Year, today.Month, 1);
 

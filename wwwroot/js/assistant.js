@@ -34,6 +34,10 @@
     let activeConversationId = null;
     let lastFailedMessage = null;
     let balancesMasked = false;
+    let isOfflineMode = localStorage.getItem("moneybot_offline_mode") === "true";
+    const offlineToggleBtn = document.getElementById("offlineToggleBtn");
+    const modeIndicator = document.getElementById("modeIndicator");
+    const modeText = document.getElementById("modeText");
 
     // Initialize
     function init() {
@@ -44,6 +48,7 @@
         setupMaskBalances();
         setupMobileMenu();
         setupSettingsModal();
+        setupOfflineToggle();
     }
 
     // Auto-grow textarea between 40px and 160px with no added height animation
@@ -188,6 +193,32 @@
         });
     }
 
+    function setupOfflineToggle() {
+        function updateToggleUI() {
+            if (modeIndicator) {
+                modeIndicator.className = isOfflineMode ? "mode-indicator offline" : "mode-indicator online";
+            }
+            if (modeText) {
+                modeText.textContent = isOfflineMode ? "Offline (LINQ)" : "Online (AI)";
+            }
+            if (offlineToggleBtn) {
+                offlineToggleBtn.title = isOfflineMode
+                    ? "Currently in Offline Mode (direct PostgreSQL LINQ). Click to switch to Online AI mode."
+                    : "Currently in Online Mode (Gemini AI). Click to switch to Offline LINQ mode.";
+            }
+        }
+
+        updateToggleUI();
+
+        if (offlineToggleBtn) {
+            offlineToggleBtn.addEventListener("click", function () {
+                isOfflineMode = !isOfflineMode;
+                localStorage.setItem("moneybot_offline_mode", isOfflineMode ? "true" : "false");
+                updateToggleUI();
+            });
+        }
+    }
+
     function setupMaskBalances() {
         const toggleMask = () => {
             balancesMasked = !balancesMasked;
@@ -304,7 +335,8 @@
                 },
                 body: JSON.stringify({
                     conversationId: activeConversationId || "conv-default",
-                    message: text
+                    message: text,
+                    isOfflineMode: isOfflineMode
                 })
             });
 
