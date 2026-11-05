@@ -24,6 +24,6 @@ Theses are then sent to the Gemini AI API with local LINQ fallbacks to deliver p
 
 
    ## Tech stack
-    PostgreSQL  - DB 
+ PostgreSQL  - DB 
    C# 
 
