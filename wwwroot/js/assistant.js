@@ -522,42 +522,29 @@
     }
 
     function generateFallbackReply(prompt) {
-        const query = prompt.toLowerCase();
+        const query = prompt.toLowerCase().trim();
+
+        if (query === "hello" || query === "hi" || query === "hey" || query.startsWith("hello ") || query.startsWith("hi ")) {
+            return "Hello! I'm MoneyBot. How can I help you manage or analyze your finances today?";
+        }
 
         if (query.includes("where") || query.includes("spending") || query.includes("category")) {
-            return `You've spent <span class="tabular-nums">R 11,420.50</span> so far this month.\n\n` +
-                `• **Groceries:** <span class="tabular-nums">R 3,850.20</span>\n` +
-                `• **Dining:** <span class="tabular-nums">R 2,120.00</span>\n` +
-                `• **Transport:** <span class="tabular-nums">R 1,940.30</span>\n` +
-                `• **Shopping:** <span class="tabular-nums">R 1,810.00</span>\n` +
-                `• **Subscriptions:** <span class="tabular-nums">R 950.00</span>\n` +
-                `• **Entertainment:** <span class="tabular-nums">R 750.00</span>`;
+            return "You can check your spending breakdown once your bank is connected via Plaid.";
         }
 
         if (query.includes("merchant") || query.includes("merchants") || query.includes("top")) {
-            return `Your top merchants this billing cycle:\n\n` +
-                `• **Checkers:** <span class="tabular-nums">R 2,420.00</span>\n` +
-                `• **Woolworths Food:** <span class="tabular-nums">R 1,430.20</span>\n` +
-                `• **Gautrain Station:** <span class="tabular-nums">R 1,120.00</span>\n` +
-                `• **Shell Foreshore:** <span class="tabular-nums">R 820.30</span>\n` +
-                `• **Rain LTE:** <span class="tabular-nums">R 499.00</span>`;
+            return "Connect your bank via Plaid to see your top merchants and spending history.";
         }
 
         if (query.includes("recurring") || query.includes("subscription") || query.includes("subscriptions")) {
-            return `These verified charges appear both this month and last month:\n\n` +
-                `• **Rain 5G:** <span class="tabular-nums">R 499.00/mo</span>\n` +
-                `• **Discovery Health:** <span class="tabular-nums">R 1,850.00/mo</span>\n` +
-                `• **Netflix:** <span class="tabular-nums">R 199.00/mo</span>\n` +
-                `• **Spotify:** <span class="tabular-nums">R 69.00/mo</span>\n` +
-                `• **iCloud Storage:** <span class="tabular-nums">R 29.99/mo</span>`;
+            return "Connect your bank via Plaid to track and detect recurring subscriptions.";
         }
 
         if (query.includes("save") || query.includes("saved") || query.includes("savings")) {
-            return `Income: <span class="tabular-nums">R 28,500.00</span>. Spending: <span class="tabular-nums">R 11,420.50</span>.\n\n` +
-                `You've saved <span class="status-positive tabular-nums">R 17,079.50</span> this month (<span class="status-positive tabular-nums">59.9%</span> of income).`;
+            return "Connect your bank via Plaid to track your savings rate and monthly inflow.";
         }
 
-        return `I have evaluated your accounts against verified ledger records. Total liquid balance is verified at <span class="tabular-nums">R 84,230.50</span> across FNB and Capitec. How would you like to proceed?`;
+        return "I'm MoneyBot, your personal financial assistant. Connect your bank via Plaid to view your live balances, spending breakdown, and transactions.";
     }
 
     if (document.readyState === "loading") {
